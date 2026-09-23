@@ -50,6 +50,9 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    // Clear stale rows so live ticks of the new sensor don't merge with the
+    // previous sensor's data while the fetch is in flight.
+    setRows([])
     api
       .getSensorChart({ sensorId, from: formatDateTime(new Date(Date.now() - range.ms)), limit: MAX_POINTS })
       .then((data) => {

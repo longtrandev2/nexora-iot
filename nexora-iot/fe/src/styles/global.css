@@ -43,7 +43,8 @@
 .toggle-checkbox:checked + .toggle-label {
   background-color: #004ac6; /* primary */
 }
-.toggle-checkbox:checked + .toggle-label::before {
+/* Knob is a real child <div> (not ::before) — slide it when checked */
+.toggle-checkbox:checked + .toggle-label > div {
   transform: translateX(100%);
   background-color: white;
 }
