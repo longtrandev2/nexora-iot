@@ -91,8 +91,8 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
   }
 
   return (
-    <div className="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-container-padding">
-      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-container-padding lg:h-full">
+      <div className="mb-4 flex shrink-0 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <h3 className="font-headline-md text-headline-md text-on-background">Dữ liệu cảm biến</h3>
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <div className="relative w-48">
@@ -130,7 +130,7 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
         </div>
       </div>
 
-      <div className={`mt-4 h-[300px] w-full transition-opacity ${loading ? 'opacity-40' : 'opacity-100'}`}>
+      <div className={`h-[300px] w-full transition-opacity lg:mt-0 lg:h-auto lg:min-h-0 lg:flex-1 ${loading ? 'opacity-40' : 'opacity-100'}`}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <defs>
