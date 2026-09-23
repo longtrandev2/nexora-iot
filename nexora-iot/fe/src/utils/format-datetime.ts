@@ -33,7 +33,7 @@ export function formatDateTimeDisplay(value: DateTimeString): string {
 /**
  * "yyyy-MM-dd HH:mm:ss" → relative label vs now:
  * "Vừa xong" (<60s) · "X phút trước" · "X giờ trước" · "Hôm qua, HH:mm" · "HH:mm dd/MM".
- * Used by device cards ("Cập nhật: ...") and on/off history time column.
+ * Used by device cards ("Cập nhật: ...").
  */
 export function formatRelativeTime(value: DateTimeString, now: Date = new Date()): string {
   const d = parseDateTime(value)
@@ -42,11 +42,30 @@ export function formatRelativeTime(value: DateTimeString, now: Date = new Date()
   const minutes = Math.floor(diffMs / 60_000)
   if (minutes < 1) return 'Vừa xong'
   if (minutes < 60) return `${minutes} phút trước`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24 && d.getDate() === now.getDate()) return `${hours} giờ trước`
+  return formatHistoryTime(value, now)
+}
+
+/**
+ * "yyyy-MM-dd HH:mm:ss" → history table label:
+ * "Hôm nay, HH:mm" · "Hôm qua, HH:mm" · "HH:mm dd/MM".
+ */
+export function formatHistoryTime(value: DateTimeString, now: Date = new Date()): string {
+  const d = parseDateTime(value)
+  if (Number.isNaN(d.getTime())) return value
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const sameDay = d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  if (sameDay) return `Hôm nay, ${hm}`
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
   if (d.getDate() === yesterday.getDate() && d.getMonth() === yesterday.getMonth() && d.getFullYear() === yesterday.getFullYear()) {
-    return `Hôm qua, ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    return `Hôm qua, ${hm}`
   }
-  return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`
+  return `${hm} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`
+}
+
+/** datetime-local input value ("yyyy-MM-ddTHH:mm[:ss]") → spec "yyyy-MM-dd HH:mm:ss". */
+export function fromDatetimeLocal(local: string): DateTimeString | undefined {
+  const trimmed = local.trim()
+  if (!trimmed) return undefined
+  const normalized = trimmed.length === 16 ? `${trimmed}:00` : trimmed
+  return normalized.replace('T', ' ')
 }

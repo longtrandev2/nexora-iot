@@ -18,6 +18,8 @@ interface AuthContextValue {
   initializing: boolean
   login(usernameOrEmail: string, password: string, remember: boolean): Promise<void>
   logout(): Promise<void>
+  /** E-4: replace the cached user after a successful profile update. */
+  updateUser(user: User): void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -57,9 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [api])
 
+  const updateUser = useCallback((next: User) => setUser(next), [])
+
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, initializing, login, logout }),
-    [user, initializing, login, logout],
+    () => ({ user, isAuthenticated: user !== null, initializing, login, logout, updateUser }),
+    [user, initializing, login, logout, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
