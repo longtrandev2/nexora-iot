@@ -183,8 +183,13 @@ export class MockSimulator {
         user_name: 'Trần Khắc Long',
         time,
       })
-      this.setDevice(id, action, time)
       minutesAgo += 10 + this.rng() * 50
+    }
+    // Replay oldest→newest so each device's final status/updated_at comes
+    // from its NEWEST action (array is newest-first).
+    for (let i = this.actions.length - 1; i >= 0; i--) {
+      const a = this.actions[i]
+      this.setDevice(a.devices_id, a.status, a.time)
     }
   }
 }
