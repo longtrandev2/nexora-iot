@@ -29,3 +29,24 @@ export function formatDateTimeDisplay(value: DateTimeString): string {
   if (Number.isNaN(d.getTime())) return value
   return `${pad(d.getHours())}:${pad(d.getMinutes())} - ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
+
+/**
+ * "yyyy-MM-dd HH:mm:ss" → relative label vs now:
+ * "Vừa xong" (<60s) · "X phút trước" · "X giờ trước" · "Hôm qua, HH:mm" · "HH:mm dd/MM".
+ * Used by device cards ("Cập nhật: ...") and on/off history time column.
+ */
+export function formatRelativeTime(value: DateTimeString, now: Date = new Date()): string {
+  const d = parseDateTime(value)
+  if (Number.isNaN(d.getTime())) return value
+  const diffMs = now.getTime() - d.getTime()
+  const minutes = Math.floor(diffMs / 60_000)
+  if (minutes < 1) return 'Vừa xong'
+  if (minutes < 60) return `${minutes} phút trước`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24 && d.getDate() === now.getDate()) return `${hours} giờ trước`
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  if (d.getDate() === yesterday.getDate() && d.getMonth() === yesterday.getMonth() && d.getFullYear() === yesterday.getFullYear()) {
+    return `Hôm qua, ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+  return `${pad(d.getHours())}:${pad(d.getMinutes())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}`
+}
