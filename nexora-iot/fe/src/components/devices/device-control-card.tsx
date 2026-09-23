@@ -8,7 +8,7 @@ interface DeviceControlCardProps {
 }
 
 /** Static display code chip per device (Stitch "DEV-LGT-..." pattern). */
-export function deviceCode(devicesId: number): string {
+function deviceCode(devicesId: number): string {
   return `DEV-LGT-10${devicesId}`
 }
 
