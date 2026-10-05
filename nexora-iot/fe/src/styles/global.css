@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Base font (Be Vietnam Pro: đủ dấu tiếng Việt, tránh fallback lệch font) ---- */
+body {
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* ---- Material Symbols (loaded in index.html) ---- */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
