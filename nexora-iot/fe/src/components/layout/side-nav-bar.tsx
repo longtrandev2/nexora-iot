@@ -30,9 +30,9 @@ export function SideNavBar() {
           </span>
         </div>
         <div>
-          <h1 className="font-headline-md text-headline-md text-primary">NEXORA IoT</h1>
+          <h1 className="font-headline-md text-headline-md text-primary">IoT</h1>
           <p className="font-label-caps uppercase text-label-caps tracking-wider text-on-surface-variant">
-            Hệ thống giám sát
+            cảm biến và điều khiển
           </p>
         </div>
       </div>
