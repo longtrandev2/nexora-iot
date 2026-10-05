@@ -26,11 +26,11 @@ export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
     trend?.dir === 'up' ? 'text-error bg-error-container/50' : 'text-secondary bg-secondary-container/50'
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-container-padding transition-shadow duration-300 hover:shadow-card-hover">
+    <div className="group relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-shadow duration-300 hover:shadow-card-hover">
       <div
         className={`absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${display.hoverGradient}`}
       />
-      <div className="relative z-10 mb-4 flex items-start justify-between">
+      <div className="relative z-10 mb-2 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className={`flex h-10 w-10 items-center justify-center rounded-full ${display.iconClasses}`}>
             <span className="material-symbols-outlined">{display.icon}</span>
@@ -45,7 +45,7 @@ export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
           </div>
         </div>
       </div>
-      <div className="relative z-10 mb-4 flex items-baseline gap-3">
+      <div className="relative z-10 mb-1 flex items-baseline gap-3">
         <span className="font-display-metrics text-display-metrics tracking-tight text-on-background">
           {hasData ? latest : '--'}{' '}
           <span className="text-2xl font-normal text-on-surface-variant">{sensor.unit}</span>
@@ -60,7 +60,7 @@ export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
           </span>
         ) : null}
       </div>
-      <div className="relative z-10 mt-2 h-12 w-full">
+      <div className="relative z-10 h-10 w-full">
         <Sparkline values={values} color={display.color} gradientId={`spark-${sensor.sensors_id}`} />
       </div>
     </div>

@@ -5,8 +5,8 @@ import { EditProfileModal } from '@/components/profile/edit-profile-modal'
 import { ProfileInfoGrid } from '@/components/profile/profile-info-grid'
 import { ProfileLinksCard } from '@/components/profile/profile-links-card'
 
-/** Static bio (no description field in /auth/me — YAGNI decision). */
-const BIO =
+/** Fallback khi user chưa nhập giới thiệu (E-4 bio field). */
+const DEFAULT_BIO =
   'Sinh viên Học viện Công nghệ Bưu chính Viễn thông, phụ trách phát triển backend và tích hợp dữ liệu cảm biến cho hệ thống NEXORA IoT. Đam mê thiết kế kiến trúc hệ thống phân tán và tối ưu hóa luồng dữ liệu thời gian thực.'
 
 /** Thông tin cá nhân (API-02 view + E-4 edit + E-5 password). */
@@ -16,6 +16,8 @@ export function ProfilePage() {
   const [changingPassword, setChangingPassword] = useState(false)
 
   if (!user) return null
+
+  const bio = user.bio.trim() !== '' ? user.bio : DEFAULT_BIO
 
   const initials = user.fullname
     .split(' ')
@@ -60,7 +62,7 @@ export function ProfilePage() {
                 <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row">
                   <div>
                     <h1 className="mb-1 font-headline-lg text-headline-lg text-on-background">{user.fullname}</h1>
-                    <p className="font-title-sm text-title-sm text-primary">IoT Backend Developer • NEXORA Team</p>
+                    <p className="font-title-sm text-title-sm text-primary">IoT Web</p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -93,7 +95,7 @@ export function ProfilePage() {
                 <span className="material-symbols-outlined text-primary">account_circle</span>
                 <h3 className="font-title-sm text-title-sm text-on-background">Giới thiệu ngắn</h3>
               </div>
-              <p className="font-body-lg leading-relaxed text-body-lg text-on-surface-variant">{BIO}</p>
+              <p className="font-body-lg leading-relaxed text-body-lg text-on-surface-variant">{bio}</p>
             </div>
             <ProfileLinksCard user={user} />
           </div>

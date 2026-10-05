@@ -1,18 +1,26 @@
+/** Rows-per-page choices offered in the table footer. */
+const LIMIT_OPTIONS = [10, 20, 30, 50]
+
 /**
- * Table footer pagination: "Hiển thị x-y trên tổng số z bản ghi" +
- * prev / numbered window (1 … n-1 n … last) / next buttons.
+ * Table footer pagination: rows-per-page select (optional) +
+ * "Hiển thị x-y trên tổng số z bản ghi" + prev / numbered window / next buttons.
  */
 export function Pagination({
   page,
   limit,
   total,
   onPageChange,
+  onLimitChange,
+  limitOptions = LIMIT_OPTIONS,
   unitWord = 'bản ghi',
 }: {
   page: number
   limit: number
   total: number
   onPageChange: (page: number) => void
+  /** Present → renders the select; caller should reset page to 1 on change. */
+  onLimitChange?: (limit: number) => void
+  limitOptions?: number[]
   unitWord?: string
 }) {
   const pageCount = Math.max(1, Math.ceil(total / limit))
@@ -50,9 +58,27 @@ export function Pagination({
 
   return (
     <div className="flex items-center justify-between border-t border-outline-variant bg-surface-container-lowest px-6 py-4">
-      <span className="font-body-md text-body-md text-on-surface-variant">
-        Hiển thị {from}-{to} trên tổng số {total.toLocaleString('vi-VN')} {unitWord}
-      </span>
+      <div className="flex flex-wrap items-center gap-4">
+        {onLimitChange && (
+          <label className="flex cursor-pointer items-center gap-2 font-body-md text-body-md text-on-surface-variant">
+            Số hàng/trang
+            <select
+              value={limit}
+              onChange={(e) => onLimitChange(Number(e.target.value))}
+              className="cursor-pointer rounded-lg border border-outline-variant bg-surface-container-low px-2 py-1.5 font-title-sm text-title-sm text-on-surface focus:border-primary focus:outline-none"
+            >
+              {limitOptions.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <span className="font-body-md text-body-md text-on-surface-variant">
+          Hiển thị {from}-{to} trên tổng số {total.toLocaleString('vi-VN')} {unitWord}
+        </span>
+      </div>
       <div className="flex items-center gap-2">
         <button
           type="button"

@@ -31,9 +31,9 @@ export function LedStatusCard({ device, onToggle }: LedStatusCardProps) {
     : 'border-outline-variant bg-surface-container-high text-outline'
 
   return (
-    <div className="group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-container-padding transition-shadow hover:shadow-card-hover">
+    <div className="group flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-shadow hover:shadow-card-hover">
       <div className="flex items-center gap-4">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-lg border transition-colors ${iconClasses}`}>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${iconClasses}`}>
           <span className="material-symbols-outlined" data-weight={isOn ? 'fill' : undefined}>
             lightbulb
           </span>

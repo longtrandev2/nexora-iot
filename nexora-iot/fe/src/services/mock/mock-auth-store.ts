@@ -9,10 +9,14 @@ import type { LoginResponse, ProfileUpdate, User } from '@/types/iot'
 const SEED_USER: User = {
   user_id: 1,
   username: 'admin',
-  email: 'admin@nexora.iot',
+  email: 'trankhaclong285@gmail.com',
   fullname: 'Trần Khắc Long',
   avatar_url: '',
   github_url: 'https://github.com/longtranddev2',
+  figma_url: '',
+  postman_url: '',
+  docs_url: 'https://github.com/longtranddev2/nexora-iot/tree/main/docs',
+  bio: 'Sinh viên Học viện Công nghệ Bưu chính Viễn thông.',
 }
 
 const MIN_PASSWORD_LENGTH = 6
@@ -24,9 +28,8 @@ export class MockAuthStore {
 
   login(usernameOrEmail: string, password: string): LoginResponse {
     const input = usernameOrEmail.trim().toLowerCase()
-    const matches =
-      (input === SEED_USER.username || input === SEED_USER.email.toLowerCase()) &&
-      password === this.password
+    // So với user HIỆN TẠI: sau khi đổi mã sinh viên (= username) vẫn login được.
+    const matches = (input === this.user.username || input === this.user.email.toLowerCase()) && password === this.password
     if (!matches) throw new ApiError(401, 'Sai tên đăng nhập hoặc mật khẩu')
     const token = `mock-token-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`
     this.validTokens.add(token)
@@ -49,8 +52,14 @@ export class MockAuthStore {
       ...this.user,
       ...(patch.fullname !== undefined && patch.fullname.trim() !== '' ? { fullname: patch.fullname.trim() } : {}),
       ...(patch.email !== undefined && patch.email.trim() !== '' ? { email: patch.email.trim() } : {}),
+      // Mã sinh viên (= username): editable, không cho rỗng.
+      ...(patch.username !== undefined && patch.username.trim() !== '' ? { username: patch.username.trim() } : {}),
       ...(patch.avatar_url !== undefined ? { avatar_url: patch.avatar_url.trim() } : {}),
       ...(patch.github_url !== undefined ? { github_url: patch.github_url.trim() } : {}),
+      ...(patch.figma_url !== undefined ? { figma_url: patch.figma_url.trim() } : {}),
+      ...(patch.postman_url !== undefined ? { postman_url: patch.postman_url.trim() } : {}),
+      ...(patch.docs_url !== undefined ? { docs_url: patch.docs_url.trim() } : {}),
+      ...(patch.bio !== undefined ? { bio: patch.bio.trim() } : {}),
     }
     return this.currentUser()
   }

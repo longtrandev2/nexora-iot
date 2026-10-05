@@ -9,13 +9,13 @@ interface LinkItem {
   href: string | undefined
 }
 
-/** Liên kết dự án card: GitHub is real (E-3); the rest are static anchors. */
+/** Liên kết dự án card: 4 link (GitHub/Figma/Postman/Tài liệu) đều editable (E-4). */
 export function ProfileLinksCard({ user }: { user: User }) {
   const links: LinkItem[] = [
     { icon: 'code', label: 'GitHub Repository', href: user.github_url?.trim() || DEFAULT_REPO },
-    { icon: 'design_services', label: 'Figma Design', href: undefined },
-    { icon: 'api', label: 'Postman Workspace', href: undefined },
-    { icon: 'description', label: 'Project Documentation', href: `${DEFAULT_REPO}/tree/main/docs` },
+    { icon: 'design_services', label: 'Figma Design', href: user.figma_url?.trim() || undefined },
+    { icon: 'api', label: 'Postman Workspace', href: user.postman_url?.trim() || undefined },
+    { icon: 'description', label: 'Tài liệu dự án', href: user.docs_url?.trim() || `${DEFAULT_REPO}/tree/main/docs` },
   ]
   return (
     <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm transition-shadow hover:shadow-card-hover">

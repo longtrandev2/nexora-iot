@@ -2,7 +2,7 @@ import type { User } from '@/types/iot'
 
 /** Static fields with no API backing (locked YAGNI decisions). */
 const SCHOOL = 'Học viện Công nghệ Bưu chính Viễn thông'
-const TEAM = 'NEXORA Team'
+const TEAM = 'ProPTIT'
 
 /** Info grid (profile.html): student code, school, email, project team. */
 export function ProfileInfoGrid({ user }: { user: User }) {
