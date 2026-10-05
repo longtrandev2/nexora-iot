@@ -17,12 +17,15 @@ export function DashboardPage() {
   }
 
   return (
-    // Desktop: fit one viewport (header 72 + main padding 24 + pb-20 80 = 176px
-    // consumed above/below). Chart flexes to absorb remaining height; smaller
-    // screens keep normal scrolling.
-    <div className="flex flex-col gap-gutter lg:h-[calc(100dvh-176px)] lg:overflow-hidden">
+    // Fit one viewport on desktop: main (the scroll container) has a fixed
+    // height, so h-full fills it exactly — no page scroll. md: (≥768px CSS)
+    // covers Windows 125–150% display scaling. The chart's min-h-0 + flex-1
+    // absorbs the remaining height; on very short screens main scrolls
+    // gracefully instead of clipping.
+    <div className="flex flex-col gap-gutter md:h-full">
       <div className="shrink-0">
         <PageHeader
+          compact
           title="Tổng quan"
           subtitle="Theo dõi dữ liệu cảm biến và trạng thái thiết bị theo thời gian thực."
         />
@@ -36,7 +39,7 @@ export function DashboardPage() {
       </div>
 
       {/* Realtime chart — absorbs remaining height on desktop */}
-      <div className="min-h-0 lg:flex-1">
+      <div className="min-h-0 md:flex-1">
         <RealtimeSensorChart sensors={sensors} />
       </div>
 
