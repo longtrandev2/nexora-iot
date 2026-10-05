@@ -1,13 +1,13 @@
 import { ApiError } from '@/services/api-error'
 import { formatDateTime } from '@/utils/format-datetime'
-import type { Device, DeviceAction, DeviceStatus, SensorInfo, SensorReading, ToggleAction } from '@/types/iot'
+import type { ActionStatus, Device, DeviceAction, DeviceStatus, SensorInfo, SensorReading, ToggleAction } from '@/types/iot'
 import {
   BUFFER_MAX,
   CONTROL_CONFIRM_MS,
   CONTROL_FAIL_CHANCE,
   HUMID_ABSENT_CHANCE,
   LIVE_INTERVAL_MS,
-  SEED_INTERVAL_MS,
+  LIVE_TICKS_ENABLED,
   SEED_TICKS,
   SENSORS,
   createRng,
@@ -16,7 +16,7 @@ import {
 
 /**
  * MockSimulator — mimics the REAL system's MQTT behavior:
- *  - sensor_data every 2s (seeded 24h backfill, 2000 pts/sensor ring buffer)
+ *  - sensor_data every 2s (seed ~2 năm thưa + 24h dày, 2000 pts/sensor ring buffer)
  *  - humid = -1 occasionally (DHT11 absent → UI "Không có dữ liệu")
  *  - device_control → 'loading' → ~500ms device_response confirm (5% timeout)
  */
@@ -38,7 +38,8 @@ export class MockSimulator {
   constructor() {
     this.seedSensorHistory()
     this.seedDeviceActions()
-    this.start()
+    // DEMO FROZEN: skip live 2s ticks — data stands still after seeding.
+    if (LIVE_TICKS_ENABLED) this.start()
   }
 
   // ---------- state snapshots (copies for the adapter) ----------
@@ -79,13 +80,26 @@ export class MockSimulator {
     this.emitDevices()
     return new Promise((resolve, reject) => {
       setTimeout(() => {
+        const time = formatDateTime(new Date())
         if (this.rng() < CONTROL_FAIL_CHANCE) {
-          deviceIds.forEach((id) => this.setDevice(id, prev.get(id) ?? 'off'))
+          // Timeout: ghi log 'failed', device giữ trạng thái cũ.
+          deviceIds.forEach((id) => {
+            this.setDevice(id, prev.get(id) ?? 'off')
+            this.actions.push({
+              id: this.nextActionId++,
+              devices_id: id,
+              devices_name: `LED ${id}`,
+              action,
+              status: 'failed',
+              user_id: 1,
+              user_name: actorName,
+              time,
+            })
+          })
           this.emitDevices()
           reject(new ApiError(504, 'Thiết bị không phản hồi'))
           return
         }
-        const time = formatDateTime(new Date())
         const confirmed = deviceIds.map((id) => {
           this.setDevice(id, action, time)
           this.actions.push({
@@ -93,7 +107,7 @@ export class MockSimulator {
             devices_id: id,
             devices_name: `LED ${id}`,
             action,
-            status: action,
+            status: 'success',
             user_id: 1,
             user_name: actorName,
             time,
@@ -161,35 +175,50 @@ export class MockSimulator {
 
   private seedSensorHistory(): void {
     const now = Date.now()
-    for (let i = SEED_TICKS; i >= 1; i--) {
-      this.nextReadings(new Date(now - i * SEED_INTERVAL_MS))
+    // Seed đa dạng: 300 điểm rải khắp ~2 năm qua (nhiều năm/tháng khác nhau
+    // để search thời gian có kết quả đa dạng)...
+    const HIST_TICKS = 300
+    const HIST_SPAN_MS = 2 * 365 * 24 * 3600 * 1000
+    for (let i = HIST_TICKS; i >= 1; i--) {
+      this.nextReadings(new Date(now - (i * HIST_SPAN_MS) / HIST_TICKS))
+    }
+    // ...+ phần còn lại của buffer dày đặc trong 24h gần đây (chart realtime đẹp).
+    const recentTicks = SEED_TICKS - HIST_TICKS
+    const recentInterval = Math.floor((24 * 3600 * 1000) / recentTicks)
+    for (let i = recentTicks; i >= 1; i--) {
+      this.nextReadings(new Date(now - i * recentInterval))
     }
   }
 
   private seedDeviceActions(): void {
     const now = Date.now()
     let minutesAgo = 10 + this.rng() * 50
+    // 3 mục mới nhất ép đủ 3 trạng thái (hiển thị ngay trang 1), còn lại random.
+    const FORCED_NEWEST: ActionStatus[] = ['loading', 'failed', 'success']
     for (let i = 0; i < 40; i++) {
       const id = 1 + Math.floor(this.rng() * 3)
       const action: ToggleAction = this.rng() < 0.5 ? 'on' : 'off'
+      const roll = this.rng()
+      const status: ActionStatus = i < 3 ? FORCED_NEWEST[i] : roll < 0.7 ? 'success' : roll < 0.85 ? 'failed' : 'loading'
       const time = formatDateTime(new Date(now - minutesAgo * 60000))
       this.actions.push({
         id: this.nextActionId++,
         devices_id: id,
         devices_name: `LED ${id}`,
         action,
-        status: action,
+        status,
         user_id: 1,
         user_name: 'Trần Khắc Long',
         time,
       })
-      minutesAgo += 10 + this.rng() * 50
+      // Bước nhảy 5–45 ngày → 40 mục rải khắp ~2 năm (đa dạng năm/tháng).
+      minutesAgo += (5 + this.rng() * 40) * 24 * 60
     }
-    // Replay oldest→newest so each device's final status/updated_at comes
-    // from its NEWEST action (array is newest-first).
+    // Replay oldest→newest: chỉ lệnh 'success' mới đổi trạng thái device
+    // (failed/loading không ảnh hưởng) → trạng thái cuối = success mới nhất.
     for (let i = this.actions.length - 1; i >= 0; i--) {
       const a = this.actions[i]
-      this.setDevice(a.devices_id, a.status, a.time)
+      if (a.status === 'success') this.setDevice(a.devices_id, a.action, a.time)
     }
   }
 }
