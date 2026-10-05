@@ -1,0 +1,45 @@
+# NEXORA IoT backend config. Every secret/host is env-overridable; defaults are placeholders.
+# Local overrides: copy application-example.yml -> be/application-local.yml (gitignored, picked
+# up automatically when running from be/), or export the env vars listed below.
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: nexora-be
+  config:
+    import: optional:file:./application-local.yml
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/nexora?useUnicode=true&characterEncoding=utf8}
+    username: ${DB_USERNAME:nexora}
+    password: ${DB_PASSWORD:YOUR_DB_PASSWORD}
+    hikari:
+      connection-timeout: 5000   # DB down must not stall the MQTT callback thread for 30s
+  mvc:
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss   # from/to query params, same format as JSON
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # schema comes from db/schema.sql — never auto-generated
+
+mqtt:
+  enabled: ${MQTT_ENABLED:true}
+  host: ${MQTT_HOST:172.20.10.2}     # broker laptop IP is DHCP — check `ipconfig` before demo
+  port: ${MQTT_PORT:2005}
+  username: ${MQTT_USERNAME:TranKhacLong}
+  password: ${MQTT_PASSWORD:YOUR_MQTT_PASSWORD}
+  topics:
+    sensor-data: sensor_data
+    device-control: device_control
+    device-response: device_response
+
+device:
+  control-timeout-ms: ${DEVICE_CONTROL_TIMEOUT_MS:30000}
+
+jwt:
+  secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+  ttl-hours: 24
+
+cors:
+  allowed-origins: ${CORS_ORIGIN:http://localhost:5173}
