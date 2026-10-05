@@ -19,6 +19,8 @@ export const SEED_TICKS = 2000
 export const SEED_INTERVAL_MS = Math.floor((24 * 3600 * 1000) / SEED_TICKS)
 /** Real ESP32 publishes sensor_data every 2s. */
 export const LIVE_INTERVAL_MS = 2000
+/** Live 2s ticks on: chart + sensor cards update in realtime (UC02). */
+export const LIVE_TICKS_ENABLED = true
 /** device_response arrives ~500ms after device_control. */
 export const CONTROL_CONFIRM_MS = 500
 /** DHT11 absent → humid -1 share of ticks. */
