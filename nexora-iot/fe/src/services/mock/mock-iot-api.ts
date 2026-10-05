@@ -1,5 +1,6 @@
 import { readToken } from '@/auth/token-store'
 import { ApiError } from '@/services/api-error'
+import { timeMatches } from '@/utils/format-datetime'
 import type {
   ChartData,
   ChartQuery,
@@ -14,6 +15,7 @@ import type {
   SensorHistoryQuery,
   SensorInfo,
   SensorReading,
+  SensorSearchKind,
   User,
 } from '@/types/iot'
 import type { IotApi } from '@/services/iot-api'
@@ -32,6 +34,38 @@ function paginate<T>(rows: T[], page = 1, limit = 20): Paged<T> {
 
 /** "yyyy-MM-dd HH:mm:ss" compares lexicographically === chronologically. */
 const byTimeDesc = <T extends { time: string }>(a: T, b: T): number => b.time.localeCompare(a.time)
+
+/** Spec khóa sensors_id: 1 Nhiệt độ, 2 Độ ẩm, 3 Ánh sáng. */
+const SENSOR_KIND: Record<number, Exclude<SensorSearchKind, 'all' | 'time'>> = {
+  1: 'temp',
+  2: 'humid',
+  3: 'light',
+}
+
+/**
+ * Search toàn log theo loại giá trị: "25" + nhiệt độ → 25.1, 25.23 (prefix
+ * match); time → contains ở cả 2 định dạng; all → giá trị/tên/ID/thời gian.
+ */
+function matchesSearch(
+  row: SensorReading,
+  kind: SensorSearchKind,
+  needle: string,
+  sensorNames: Map<number, string>,
+): boolean {
+  if (kind !== 'all' && kind !== 'time' && SENSOR_KIND[row.sensors_id] !== kind) return false
+  if (!needle) return true
+  if (kind === 'time') return timeMatches(row.time, needle)
+  if (kind === 'all') {
+    const name = (sensorNames.get(row.sensors_id) ?? '').toLowerCase()
+    return (
+      String(row.value).startsWith(needle) ||
+      name.includes(needle) ||
+      String(row.id).includes(needle) ||
+      timeMatches(row.time, needle)
+    )
+  }
+  return String(row.value).startsWith(needle)
+}
 
 /**
  * MockIotApi — IotApi over MockSimulator. Query/filter/pagination logic lives
@@ -112,13 +146,17 @@ export class MockIotApi implements IotApi {
 
   async getSensorHistory(query: SensorHistoryQuery): Promise<Paged<SensorReading>> {
     await delay()
+    const kind = query.search_kind ?? 'all'
+    const needle = (query.search ?? '').trim().toLowerCase()
+    const sensorNames = new Map(this.sim.sensors().map((s) => [s.sensors_id, s.sensors_name]))
     const rows = this.sim
       .sensorLog()
       .filter(
         (r) =>
           (query.sensors_id === undefined || r.sensors_id === query.sensors_id) &&
           (!query.from || r.time >= query.from) &&
-          (!query.to || r.time <= query.to),
+          (!query.to || r.time <= query.to) &&
+          matchesSearch(r, kind, needle, sensorNames),
       )
       .sort(byTimeDesc)
     return paginate(rows, query.page, query.limit)
@@ -152,6 +190,7 @@ export class MockIotApi implements IotApi {
 
   async getDeviceHistory(query: DeviceHistoryQuery): Promise<Paged<DeviceAction>> {
     await delay()
+    const needle = (query.search ?? '').trim().toLowerCase()
     const rows = this.sim
       .actionLog()
       .filter(
@@ -160,7 +199,8 @@ export class MockIotApi implements IotApi {
           (query.action === undefined || a.action === query.action) &&
           (query.status === undefined || a.status === query.status) &&
           (!query.from || a.time >= query.from) &&
-          (!query.to || a.time <= query.to),
+          (!query.to || a.time <= query.to) &&
+          (!needle || timeMatches(a.time, needle)),
       )
       .sort(byTimeDesc)
     return paginate(rows, query.page, query.limit)

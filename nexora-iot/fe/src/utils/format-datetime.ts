@@ -23,11 +23,27 @@ export function parseDateTime(value: DateTimeString): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, ss ?? 0)
 }
 
-/** "yyyy-MM-dd HH:mm:ss" → table display "HH:mm - dd/MM/yyyy". */
+/** "yyyy-MM-dd HH:mm:ss" → table display "HH:mm:ss dd/MM/yyyy" (đủ giây + ngày tháng năm). */
 export function formatDateTimeDisplay(value: DateTimeString): string {
   const d = parseDateTime(value)
   if (Number.isNaN(d.getTime())) return value
-  return `${pad(d.getHours())}:${pad(d.getMinutes())} - ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+/** Các dạng format của 1 time điểm dùng cho search contains (đã lowercase). */
+export function timeSearchVariants(value: DateTimeString): string[] {
+  const d = parseDateTime(value)
+  if (Number.isNaN(d.getTime())) return [value.toLowerCase()]
+  const hms = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  const ymd = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+  const dmy = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  return [value.toLowerCase(), `${hms} ${dmy}`.toLowerCase(), `${ymd} ${hms}`.toLowerCase()]
+}
+
+/** Search thời gian contains đa định dạng: "2026" → cả năm, "2026/09" → thêm tháng, "14:3" → giờ. */
+export function timeMatches(value: DateTimeString, needle: string): boolean {
+  if (!needle) return true
+  return timeSearchVariants(value).some((variant) => variant.includes(needle))
 }
 
 /**
