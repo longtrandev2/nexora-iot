@@ -20,6 +20,7 @@ export function OnoffHistoryPage() {
   const [status, setStatus] = useState('')
   const [applied, setApplied] = useState({ search: '', device: '', action: '', status: '' })
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(PAGE_LIMIT)
 
   useEffect(() => {
     api.getDevices().then(setDevices).catch(() => setDevices([]))
@@ -32,14 +33,19 @@ export function OnoffHistoryPage() {
       status: applied.status ? (applied.status as DeviceHistoryQuery['status']) : undefined,
       search: applied.search,
       page,
-      limit: PAGE_LIMIT,
+      limit,
     }),
-    [applied, page],
+    [applied, page, limit],
   )
   const { rows, total, loading } = usePagedFetch<DeviceAction, DeviceHistoryQuery>((q) => api.getDeviceHistory(q), query)
 
   const searchAll = (): void => {
     setApplied({ search, device, action, status })
+    setPage(1)
+  }
+
+  const changeLimit = (n: number): void => {
+    setLimit(n)
     setPage(1)
   }
 
@@ -102,7 +108,7 @@ export function OnoffHistoryPage() {
           <h3 className="font-title-sm text-title-sm text-on-background">Chi tiết hoạt động</h3>
         </div>
         <DeviceHistoryTable rows={rows} />
-        <Pagination page={page} limit={PAGE_LIMIT} total={total} onPageChange={setPage} unitWord="mục" />
+        <Pagination page={page} limit={limit} total={total} onPageChange={setPage} onLimitChange={changeLimit} unitWord="mục" />
       </div>
     </>
   )

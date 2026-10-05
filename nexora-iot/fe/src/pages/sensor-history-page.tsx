@@ -27,19 +27,25 @@ export function SensorHistoryPage() {
   const [term, setTerm] = useState('')
   const [applied, setApplied] = useState<{ kind: SensorSearchKind; term: string }>({ kind: 'all', term: '' })
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(PAGE_LIMIT)
 
   useEffect(() => {
     api.getSensors().then(setSensors).catch(() => setSensors([]))
   }, [api])
 
   const query = useMemo<SensorHistoryQuery>(
-    () => ({ page, limit: PAGE_LIMIT, search: applied.term, search_kind: applied.kind }),
-    [page, applied],
+    () => ({ page, limit, search: applied.term, search_kind: applied.kind }),
+    [page, limit, applied],
   )
   const { rows, total, loading } = usePagedFetch<SensorReading, SensorHistoryQuery>((q) => api.getSensorHistory(q), query)
 
   const search = (): void => {
     setApplied({ kind, term })
+    setPage(1)
+  }
+
+  const changeLimit = (n: number): void => {
+    setLimit(n)
     setPage(1)
   }
 
@@ -75,7 +81,7 @@ export function SensorHistoryPage() {
 
       <div className={`overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-sm transition-opacity ${loading ? 'opacity-40' : ''}`}>
         <SensorHistoryTable rows={rows} sensors={sensors} />
-        <Pagination page={page} limit={PAGE_LIMIT} total={total} onPageChange={setPage} />
+        <Pagination page={page} limit={limit} total={total} onPageChange={setPage} onLimitChange={changeLimit} />
       </div>
     </>
   )
