@@ -3,8 +3,8 @@ import { createIotApi } from './create-iot-api'
 import type { IotApi } from './iot-api'
 
 /**
- * Provides ONE IotApi instance for the whole app (single simulator timer in
- * mock mode, one axios client in http mode). Pages/hooks get it via useIotApi().
+ * Provides ONE IotApi instance for the whole app (one axios client + one STOMP
+ * socket). Pages/hooks get it via useIotApi().
  */
 const IotApiContext = createContext<IotApi | null>(null)
 

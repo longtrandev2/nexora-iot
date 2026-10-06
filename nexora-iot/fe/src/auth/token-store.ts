@@ -1,6 +1,6 @@
 /**
  * Token persistence: localStorage when "Ghi nhớ đăng nhập" is checked,
- * sessionStorage otherwise (dies with the tab). Mock + Http adapters and the
+ * sessionStorage otherwise (dies with the tab). The Http adapter and the
  * auth context all go through this module — never touch storage directly.
  */
 const STORAGE_KEY = 'nexora.auth.token'

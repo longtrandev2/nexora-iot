@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-/** Spring Boot backend for VITE_API_MODE=http (override with BE_URL when it runs elsewhere). */
+/** Spring Boot backend the dev server proxies to (override with BE_URL when it runs elsewhere). */
 const backend = process.env.BE_URL ?? 'http://localhost:8080'
 
 // https://vite.dev/config/

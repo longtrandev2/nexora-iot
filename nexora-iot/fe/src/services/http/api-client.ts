@@ -6,7 +6,7 @@ import { ApiError } from '@/services/api-error'
 /**
  * Shared axios instance for HttpIotApi:
  *  - adds `Authorization: Bearer <token>` from token-store
- *  - turns every failure into ApiError(status, BE `error` message) — same contract as the mock
+ *  - turns every failure into ApiError(status, BE `error` message) for the pages' error handling
  *  - 401 on an authenticated call → drop token + go to /login (session expired)
  * Timeout > BE device-confirm timeout (30s) so a 504 from the BE always arrives.
  */

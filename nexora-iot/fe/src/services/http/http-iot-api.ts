@@ -24,7 +24,7 @@ const DEVICE_POLL_MS = 10_000
 
 /**
  * HttpIotApi — IotApi over the Spring Boot backend (REST /api/v1 + STOMP /ws).
- * Behavioral twin of MockIotApi: same shapes, same ApiError statuses/messages (BE-provided).
+ * Errors surface as ApiError with the backend's status + Vietnamese message.
  */
 export class HttpIotApi implements IotApi {
   private readonly hub = new StompHub()
