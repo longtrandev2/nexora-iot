@@ -19,15 +19,20 @@ GRANT ALL PRIVILEGES ON nexora.* TO 'nexora'@'localhost';
 cd nexora-iot/be/src/main/resources/db
 mysql -u root -p < schema.sql             # creates DB `nexora` + 5 tables
 mysql -u root -p < seed.sql               # admin/admin123, sensors, LED 1..3 (idempotent)
-mysql -u root -p < seed-demo.sql          # optional: RESETS logs, ~2 years of demo history
 ```
-- MySQL server timezone must be the laptop's (Asia/Ho_Chi_Minh) — times are stored as local time.
+No fake history is seeded: every reading and action comes from the real ESP32.
+- Times are written by the backend from the laptop clock (local time, Asia/Ho_Chi_Minh) — keep
+  backend and browser on the same machine/timezone.
 - DB created from an older schema? `ALTER TABLE users MODIFY avatar_url MEDIUMTEXT NOT NULL;`
   (otherwise avatar uploads fail with 400).
 
 ## 2. Pre-flight (every demo day)
 1. `ipconfig` → note the laptop IPv4 (DHCP, e.g. `172.20.10.2`).
-2. Start the broker: `iot-bai2-mqtt/start-mosquitto-broker.bat` (listener 2005, user `TranKhacLong`).
+2. Broker running on 2005 with user `TranKhacLong`: the Mosquitto Windows service configured per
+   `iot-bai2-mqtt/README.md` §4.2 (`Get-Service mosquitto` → Running). Note: `start-mosquitto-broker.bat`
+   points at an old path (`D:\Project\IOT\...\mosquitto.conf`) and would also clash with the service on
+   port 2005; `setup-mosquitto-admin.bat` is an old script for port 1888 that overwrites the password
+   file with another user — don't run it.
 3. Power the ESP32; Serial monitor should show `[MQTT] Ket noi OK`.
 4. Optional check: `mosquitto_sub -h <IP> -p 2005 -u TranKhacLong -P YOUR_MQTT_PASSWORD -t sensor_data -v`
    → one line every 2 s.
@@ -43,14 +48,14 @@ mvn spring-boot:run                                 # or: mvn -DskipTests packag
 - `curl http://localhost:8080/api/v1/health` → `{"status":"up"}`.
 - Env vars work instead of the yml: `DB_PASSWORD`, `MQTT_HOST`, `MQTT_PASSWORD`, `JWT_SECRET`, …
   (full list in `src/main/resources/application.yml`).
-- On every MQTT connect the backend sends `{}`; the ESP32 answers with its LED state, so the
-  device cards always start in sync with the breadboard.
+- The backend sends `{}` on every MQTT connect and whenever the ESP32's `sensor_data` resumes after
+  > 10 s of silence (power cycle / reboot); the ESP32 answers with its LED state, so the device cards
+  stay in sync with the breadboard (after a reboot all 3 LEDs are off).
 
 ## 4. Frontend
 ```bash
 cd nexora-iot/fe
 npm install
-echo "VITE_API_MODE=http" > .env      # gitignored; without it the app runs on the mock
 npm run dev                           # http://localhost:5173 (proxies /api and /ws to :8080)
 ```
 Log in with **admin / admin123**.
@@ -75,11 +80,11 @@ Log in with **admin / admin123**.
 | Toggle → "Không kết nối được MQTT broker" (503) | Backend not connected to the broker (see above) |
 | Toggle → "Thiết bị không phản hồi" (504) after 30 s | Broker OK but ESP32 offline / on another WiFi / wrong `MQTT_HOST` in firmware |
 | Dashboard frozen, no errors | ESP32 not publishing; check the `mosquitto_sub` line in step 2 |
-| Times shifted by hours | MySQL timezone differs from the laptop's |
+| Times shifted by hours | Backend JVM runs in another timezone than the browser (e.g. `-Duser.timezone=UTC`) |
 | `mvn test` fails at startup | Docker Desktop not running (tests use Testcontainers MySQL) |
 
 ## After the demo
-`sensor_data` grows ~130k rows/day. To reset: re-run `seed-demo.sql` (regenerates demo history)
-or `TRUNCATE data_sensors;`.
+The `data_sensors` table grows ~130k rows/day while the ESP32 runs. To start fresh: `TRUNCATE data_sensors;`
+(and `TRUNCATE actions;` for the on/off log).
 
 API checks without the UI: import `docs/postman/nexora-api.postman_collection.json`, run "Auth / Login" first.

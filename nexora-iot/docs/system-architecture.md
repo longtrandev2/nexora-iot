@@ -94,6 +94,16 @@ PendingCommandRegistry: wait for MQTT "device_response" (≤30s timeout)
 React FE: action row status updates, LED toggle completes (or reverts on timeout)
 ```
 
+### LED State Sync (no correlation id in the firmware)
+```
+BE publishes "{}" to device_control when:
+  - it (re)connects to the broker
+  - sensor_data resumes after > 10s of silence (ESP32 power-cycled → all LEDs off)
+  - a control command failed/timed out (the reverted state is only a guess)
+ESP32 matches no command in "{}" → re-publishes device_response {led1:..,led2:..,led3:..}
+BE: devices with no command in flight → devices.status updated if different → push /topic/devices
+```
+
 ### WebSocket Fallback
 ```
 FE connects to /ws (STOMP, auto-reconnect 5s) → subscribe /topic/sensors, /topic/devices
@@ -147,7 +157,7 @@ On reconnect: one catch-up poll fills pushes missed while offline
 
 ## Constraints & Known Limits
 
-- **Timezone**: MySQL server TZ must equal JVM TZ (seed-demo uses NOW())
+- **Timezone**: times are written from the backend JVM's local clock; FE shows them as local time
 - **JWT revocation**: no stateless revocation; token valid until expiry
 - **Performance**: search full-scans as log grows; device control blocks 1 thread for up to 30s
 - **MQTT echo matching**: no correlation ID; matches state value only

@@ -21,7 +21,7 @@ Full step-by-step (DB setup, pre-flight, demo script): `docs/runbook-demo.md`.
 
 ```bash
 cd be
-# DB once: mysql -u root -p < src/main/resources/db/schema.sql (then seed.sql, optional seed-demo.sql)
+# DB once: mysql -u root -p < src/main/resources/db/schema.sql, then seed.sql
 # Config: copy application-example.yml → application-local.yml (gitignored) and fill it,
 # or export env vars DB_PASSWORD, MQTT_HOST, MQTT_PASSWORD, JWT_SECRET (>= 32 chars)
 mvn spring-boot:run   # http://localhost:8080/api/v1/health → {"status":"up"}
@@ -34,17 +34,16 @@ On Windows run Maven from Git Bash after `cd` (PowerShell + the Vietnamese path 
 ```bash
 cd fe
 npm install
-# Set VITE_API_MODE=http (or keep mock for UI-only dev)
-npm run dev      # http://localhost:5173 (proxies /api, /ws to BE)
+npm run dev      # http://localhost:5173 (proxies /api, /ws to the backend on :8080)
 npm run build    # tsc + vite build
 ```
 
-Stack: Vite, React 19, TypeScript (strict), Tailwind CSS 3.4, recharts. UI tiếng Việt (Stitch tokens). Data layer: `IotApi` interface with `MockIotApi` (default) / `HttpIotApi` (real backend).
+Stack: Vite, React 19, TypeScript (strict), Tailwind CSS 3.4, recharts. UI tiếng Việt (Stitch tokens). Data layer: `IotApi` interface implemented by `HttpIotApi` (REST + STOMP) — all data comes from the backend / ESP32, there is no mock mode.
 
 ### MQTT Setup (demo only)
 
 See `../iot-bai2-mqtt/README.md` for Mosquitto config + ESP32 firmware. TL;DR:
-- Laptop runs Mosquitto on port 2005 (`start-mosquitto-broker.bat`) with auth user `TranKhacLong`
+- Laptop runs Mosquitto on port 2005 (Windows service configured per that README §4.2) with auth user `TranKhacLong`
 - ESP32 (iot-bai2-mqtt) publishes sensor data, listens for device control commands
 - BE bridges MQTT → REST/WebSocket for FE
 

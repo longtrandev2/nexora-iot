@@ -1,7 +1,7 @@
 # DB Schema Notes — Implementation vs Spec ERD
 
 Source of truth: `be/src/main/resources/db/schema.sql` (MySQL 8+, utf8mb4).
-Seeds: `seed.sql` (admin + catalogs, idempotent), `seed-demo.sql` (demo history).
+Seed: `seed.sql` (admin + sensor catalog + LED 1..3, idempotent). No fake history — logs come from the ESP32.
 
 ## Table / column deltas
 
@@ -26,13 +26,13 @@ Seeds: `seed.sql` (admin + catalogs, idempotent), `seed-demo.sql` (demo history)
 - All times are `DATETIME`, local server time, serialized `yyyy-MM-dd HH:mm:ss`. No TZ conversion anywhere.
 - Ingest writes ~3 rows / 2s (~130k rows/day). No retention job; `TRUNCATE data_sensors` between demo days if wanted.
 
-## Search SQL (parity with FE mock)
-- Value prefix: `CAST(value AS CHAR) LIKE 'needle%'`. MySQL prints DOUBLE like JS `String(n)`
+## Search SQL (matches what the FE displays)
+- Value prefix: `CAST(value AS CHAR) LIKE 'needle%'`. MySQL prints DOUBLE the way the FE shows it
   (`25.1`, `60`, `-1`), so "25" matches 25.1 / 25.23 but not 2.25.
 - Time contains: needle is a substring of ANY of `DATE_FORMAT(time, '%Y-%m-%d %H:%i:%s')`,
-  `'%H:%i:%s %d/%m/%Y'`, `'%Y/%m/%d %H:%i:%s'` (mirrors `timeSearchVariants`).
+  `'%H:%i:%s %d/%m/%Y'` (the table display format), `'%Y/%m/%d %H:%i:%s'`.
 - `search_kind=all` also matches sensor name contains and id contains. Name match uses the
-  column collation (`utf8mb4_unicode_ci`: case + accent insensitive) — a superset of the mock.
+  column collation (`utf8mb4_unicode_ci`: case + accent insensitive).
 - `%`, `_`, `\` in the needle are escaped (literal match, like JS `includes`).
 - Latest data per sensor uses one indexed `ORDER BY time DESC, id DESC LIMIT n` per sensor
   (instead of a full-table window function) — stays fast as the log grows.
@@ -56,15 +56,14 @@ No schema.sql change needed; `CREATE TABLE IF NOT EXISTS` preserves existing tab
 Accepted trade-offs for a single-user laptop demo:
 - **History search performance**: per-page `COUNT(*)`, `OFFSET` paging and `DATE_FORMAT` contains
   searches scan more rows as the log grows (~130k rows/day). `TRUNCATE data_sensors` between demo days.
-- **Name search**: `utf8mb4_unicode_ci` is case + accent insensitive ("nhiet" matches "Nhiệt độ") —
-  a superset of the mock's `includes`.
+- **Name search**: `utf8mb4_unicode_ci` is case + accent insensitive ("nhiet" matches "Nhiệt độ").
 - **JWT is stateless**: logout / password change do not revoke issued tokens (valid until 24h expiry);
   the FE drops its token on logout. No login rate limit.
 - **`/ws` is unauthenticated** but read-only: clients can subscribe to `/topic/*`; STOMP SEND to
   `/topic/*` is rejected by `WebSocketConfig`.
 - **Device control blocks the request thread** for up to 30 s while waiting for the ESP32 echo.
-- **Timezones**: MySQL server, JVM and laptop must share one timezone (Asia/Ho_Chi_Minh on the demo
-  laptop). `seed-demo.sql` uses MySQL `NOW()`, ingestion uses JVM time and the FE displays both as
-  local time — do NOT switch only one of them (e.g. to UTC).
+- **Timezones**: every displayed time (readings, actions, `updated_at`) is written by the backend from
+  the JVM's local clock and shown by the FE as local time — run backend and browser on the same laptop
+  timezone (Asia/Ho_Chi_Minh). Don't move only one side to UTC.
 - **Avatar**: stored inline as a data: URL in `users.avatar_url` (server caps it at 3M chars); it is
   returned in every `/auth/me` / login response, so keep uploads small.
