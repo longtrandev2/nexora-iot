@@ -1,19 +1,16 @@
 package vn.ptit.iot.nexora.mqtt;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import vn.ptit.iot.nexora.entity.DeviceStatus;
-import vn.ptit.iot.nexora.entity.ToggleAction;
+import vn.ptit.iot.nexora.entity.Device;
 
 /**
- * Lenient codec for the ESP32 firmware payloads (NOT strict JSON — frozen format):
- *   sensor_data     {temp:29.50C,humid:60%,light:45%}   (humid -1% = DHT11 absent)
- *   device_response {led1:on,led2:off,led3:on}
- *   device_control  {led2:on} | {all:off}               (firmware matches indexOf("ledN:on"))
- * Malformed input yields empty results — callers log + skip, never throw.
+ * Reads the ESP32 firmware payloads (not strict JSON, spaces allowed):
+ *   sensor_data     {temp:29.50C,humid: 9%,light:45%}   humid -1 = DHT11 missing
+ *   device_response {led1:on,led2:off,led3:on}          always the state of all 3 LEDs
+ * Bad input gives null / an empty map; it never throws.
  */
 public final class MqttPayloadParser {
 
@@ -23,47 +20,31 @@ public final class MqttPayloadParser {
     private static final Pattern HUMID = Pattern.compile("humid" + NUMBER, Pattern.CASE_INSENSITIVE);
     private static final Pattern LIGHT = Pattern.compile("light" + NUMBER, Pattern.CASE_INSENSITIVE);
 
-    /** Matches no firmware command, so the ESP32 only re-publishes its full LED state. */
-    public static final String STATE_ECHO_REQUEST = "{}";
-
     private MqttPayloadParser() {
     }
 
-    /** One sensor tick; all three values required (no partial inserts). */
     public record SensorTick(double temp, double humid, double light) {
     }
 
-    /** device id (ledN -> N) -> hardware-reported state; empty map when nothing parseable. */
-    public static Map<Integer, DeviceStatus> parseLedStates(String payload) {
-        Map<Integer, DeviceStatus> states = new TreeMap<>();
-        if (payload == null) return states;
-        Matcher m = LED.matcher(payload);
-        while (m.find()) {
-            states.put(Integer.parseInt(m.group(1)), DeviceStatus.valueOf(m.group(2).toLowerCase()));
-        }
+    /** led number -> state; empty when nothing matches. */
+    public static Map<Integer, Device.Status> parseLeds(String payload) {
+        Map<Integer, Device.Status> states = new TreeMap<>();
+        Matcher m = LED.matcher(payload == null ? "" : payload);
+        while (m.find()) states.put(Integer.parseInt(m.group(1)), Device.Status.valueOf(m.group(2).toLowerCase()));
         return states;
     }
 
-    public static Optional<SensorTick> parseSensorData(String payload) {
-        if (payload == null) return Optional.empty();
-        Optional<Double> temp = number(TEMP, payload);
-        Optional<Double> humid = number(HUMID, payload);
-        Optional<Double> light = number(LIGHT, payload);
-        if (temp.isEmpty() || humid.isEmpty() || light.isEmpty()) return Optional.empty();
-        return Optional.of(new SensorTick(temp.get(), humid.get(), light.get()));
+    /** The 3 values of one tick, or null if any is missing. */
+    public static SensorTick parseSensors(String payload) {
+        if (payload == null) return null;
+        Double temp = number(TEMP, payload);
+        Double humid = number(HUMID, payload);
+        Double light = number(LIGHT, payload);
+        return temp == null || humid == null || light == null ? null : new SensorTick(temp, humid, light);
     }
 
-    /**
-     * Compact command the firmware understands. Single device sends ONLY its own key so an
-     * in-flight command on another LED can never be overwritten by a stale state.
-     */
-    public static String controlPayload(Integer deviceId, ToggleAction action) {
-        String key = deviceId == null ? "all" : "led" + deviceId;
-        return "{" + key + ":" + action.name() + "}";
-    }
-
-    private static Optional<Double> number(Pattern pattern, String payload) {
+    private static Double number(Pattern pattern, String payload) {
         Matcher m = pattern.matcher(payload);
-        return m.find() ? Optional.of(Double.parseDouble(m.group(1))) : Optional.empty();
+        return m.find() ? Double.valueOf(m.group(1)) : null;
     }
 }

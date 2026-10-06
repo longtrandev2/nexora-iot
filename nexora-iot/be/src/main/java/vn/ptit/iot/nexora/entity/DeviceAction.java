@@ -7,51 +7,54 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-/** actions row: one control attempt by a user (loading -> success | failed). */
+/** Table `actions`: one on/off command sent by a user and its result. */
 @Entity
-@Table(name = "actions")
+@Table(name = "actions", indexes = {
+        @Index(name = "idx_act_device_time", columnList = "device_id, time"),
+        @Index(name = "idx_act_time", columnList = "time")})
+@Getter
+@Setter
+@NoArgsConstructor
 public class DeviceAction {
+
+    public enum Command { on, off }
+
+    /** loading = waiting for the ESP32's device_response. */
+    public enum Result { success, failed, loading }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "device_id", nullable = false)
+    @Column(nullable = false)
     private Integer deviceId;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(nullable = false)
     private Integer userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ToggleAction action;
+    private Command action;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ActionStatus status;
+    private Result status;
 
     @Column(nullable = false)
     private LocalDateTime time;
 
-    protected DeviceAction() {
-    }
-
-    public DeviceAction(int deviceId, int userId, ToggleAction action, ActionStatus status, LocalDateTime time) {
+    public DeviceAction(int deviceId, int userId, Command action, LocalDateTime time) {
         this.deviceId = deviceId;
         this.userId = userId;
         this.action = action;
-        this.status = status;
+        this.status = Result.loading;
         this.time = time;
     }
-
-    public Integer getId() { return id; }
-    public Integer getDeviceId() { return deviceId; }
-    public Integer getUserId() { return userId; }
-    public ToggleAction getAction() { return action; }
-    public ActionStatus getStatus() { return status; }
-    public void setStatus(ActionStatus status) { this.status = status; }
-    public LocalDateTime getTime() { return time; }
 }

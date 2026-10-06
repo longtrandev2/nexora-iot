@@ -7,48 +7,39 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Optional;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import vn.ptit.iot.nexora.config.JwtProperties;
 
-/** Issues/verifies stateless HS256 tokens; subject = user id. No refresh, no blacklist (YAGNI). */
+/** HS256 token valid 24h; subject = user id. */
 @Service
 public class JwtService {
 
-    private static final int MIN_SECRET_BYTES = 32;
+    private static final Duration TTL = Duration.ofHours(24);
 
     private final SecretKey key;
-    private final Duration ttl;
 
-    public JwtService(JwtProperties properties) {
-        String secret = properties.secret();
-        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
-            throw new IllegalStateException(
-                    "jwt.secret must be at least " + MIN_SECRET_BYTES + " bytes: set the JWT_SECRET env var");
+    public JwtService(@Value("${jwt.secret}") String secret) {
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("jwt.secret must be at least 32 characters (application-local.yml)");
         }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.ttl = Duration.ofHours(properties.ttlHours());
     }
 
     public String issue(int userId) {
         Instant now = Instant.now();
-        return Jwts.builder()
-                .subject(Integer.toString(userId))
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plus(ttl)))
-                .signWith(key, Jwts.SIG.HS256)
-                .compact();
+        return Jwts.builder().subject(String.valueOf(userId))
+                .issuedAt(Date.from(now)).expiration(Date.from(now.plus(TTL)))
+                .signWith(key).compact();
     }
 
-    /** User id from a valid, unexpired token; empty for anything else (never throws). */
-    public Optional<Integer> parseUserId(String token) {
+    /** User id of a valid token, or null. */
+    public Integer userId(String token) {
         try {
-            String subject = Jwts.parser().verifyWith(key).build()
-                    .parseSignedClaims(token).getPayload().getSubject();
-            return Optional.of(Integer.valueOf(subject));
+            return Integer.valueOf(Jwts.parser().verifyWith(key).build()
+                    .parseSignedClaims(token).getPayload().getSubject());
         } catch (JwtException | IllegalArgumentException e) {
-            return Optional.empty();
+            return null;
         }
     }
 }

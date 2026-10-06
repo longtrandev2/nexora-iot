@@ -61,9 +61,9 @@ ESP32 → pub "sensor_data" {temp, humid, light} (every 2s)
   ↓
 Mosquitto (broker)
   ↓
-Spring Boot MqttConnectionManager → SensorDataHandler
+MqttService (Paho) → Spring event MqttService.Message
   ↓
-Parse payload → SensorIngestService
+SensorService.onSensorData: parse payload
   ↓
 INSERT INTO data_sensors (sensor_id, time, value)
   ↓
@@ -76,7 +76,7 @@ React FE: recharts line chart updates, polling fallback after 5s WS lag
 ```
 React FE: user clicks LED toggle → POST /api/v1/devices/control
   ↓
-DeviceControlService
+DeviceService.control
   ├─ Validate device exists
   ├─ Check E3 in-flight lock per device (400 if "Đang xử lý")
   └─ Mark action 'loading', device 'loading'
@@ -85,7 +85,7 @@ Publish MQTT "device_control" {ledN:on|off} (only the target LED) or {all:on|off
   ↓
 Publish /topic/devices to FE (optimistic state)
   ↓
-PendingCommandRegistry: wait for MQTT "device_response" (≤30s timeout)
+Wait for MQTT "device_response" (≤30s, DeviceService.onDeviceResponse completes the wait)
   ├─ On echo arrival: match state == target
   │  ├─ YES → mark action 'success', update device state, broadcast /topic/devices
   │  └─ NO → ignore (stale echo from earlier command)
@@ -96,10 +96,7 @@ React FE: action row status updates, LED toggle completes (or reverts on timeout
 
 ### LED State Sync (no correlation id in the firmware)
 ```
-BE publishes "{}" to device_control when:
-  - it (re)connects to the broker
-  - sensor_data resumes after > 10s of silence (ESP32 power-cycled → all LEDs off)
-  - a control command failed/timed out (the reverted state is only a guess)
+BE publishes "{}" to device_control when it (re)connects to the broker.
 ESP32 matches no command in "{}" → re-publishes device_response {led1:..,led2:..,led3:..}
 BE: devices with no command in flight → devices.status updated if different → push /topic/devices
 ```
@@ -119,13 +116,16 @@ On reconnect: one catch-up poll fills pushes missed while offline
 
 | Package | Role |
 |---------|------|
-| `config` | Jackson snake_case serialization, CORS (http://localhost:5173), WebSocket SEND blocking |
-| `security` | JWT HS256 (24h TTL), BCrypt auth, jjwt 0.12.6 |
-| `entity` | JPA User, Sensor, Device, DataSensor, DeviceAction (+ status/action enums) |
-| `repository` | Spring Data JPA + NamedParameterJdbcTemplate (native SQL for search) |
-| `service` | AuthService, SensorQueryService, DeviceQueryService, DeviceControlService, PendingCommandRegistry, DeviceCommandRecorder, SensorIngestService, RealtimePushService |
-| `mqtt` | MqttConnectionManager, MqttPayloadParser, DeviceResponseHandler, SensorDataHandler |
-| `controller` | REST endpoints, error response formatting |
+| `entity` | JPA User, Sensor, Device, DataSensor, DeviceAction — Hibernate creates the tables |
+| `repository` | Spring Data JPA (3 hand-written JPQL queries for chart/history search) |
+| `dto` | `ApiDto`: every JSON body (records) + paging |
+| `service` | AuthService, SensorService, DeviceService (control loop), ApiException |
+| `mqtt` | MqttService (connect/reconnect, publish, events), MqttPayloadParser |
+| `controller` | AuthController (+health), SensorController (+chart), DeviceController, ApiExceptionHandler |
+| `security` | JwtService (HS256, 24h), SecurityConfig (Bearer filter, CORS, BCrypt) |
+| `config` | WebSocketConfig (STOMP /ws), DataSeeder (admin, sensors, LED 1..3) |
+
+File-by-file description: `backend-readme.md`.
 
 ### Database Schema
 
@@ -135,7 +135,7 @@ On reconnect: one catch-up poll fills pushes missed while offline
 | sensors | 3 | pk(id) | catalog: temp, humid, light |
 | devices | 3 | pk(id) | LED 1, 2, 3 state |
 | data_sensors | ~130k/day | (sensor_id, time), (time) | ingest log |
-| actions | ~40/2y | (device_id, time), (user_id), (time) | control history |
+| actions | 1 per command | (device_id, time), (time) | control history |
 
 ### Frontend Routes
 
@@ -152,7 +152,7 @@ On reconnect: one catch-up poll fills pushes missed while offline
 
 - **Auth**: JWT + BCrypt + CORS (localhost:5173 only)
 - **API**: all endpoints except `/health`, `/auth/login`, `/auth/logout` require valid JWT
-- **WebSocket**: `/ws` is an unauthenticated read-only feed; client STOMP SEND to `/topic/*` is rejected by WebSocketConfig (no spoofed dashboard data)
+- **WebSocket**: `/ws` needs no login (dashboard feed on the laptop network)
 - **MQTT**: Bridge internal (laptop network), auth via broker credentials (env var `MQTT_PASSWORD`)
 
 ## Constraints & Known Limits
@@ -168,10 +168,10 @@ See `db-schema-notes.md` → "Known limits" for detailed constraints.
 
 ## Verification Checklist
 
-- [x] 36/36 JUnit tests green (MySQL 8.0 Docker, real DB operations)
-- [x] MQTT E2E with an ESP32 *simulator* ↔ authenticated Mosquitto ↔ BE (control round-trip ~0.2–0.3s, 504 drill, E3 lock, ingest 3 rows/2s)
-- [x] FE E2E in a real Chrome (http mode): login, dashboard live, LED toggle, histories, zero console/HTTP errors
-- [ ] Physical ESP32 + breadboard (pending — see `runbook-demo.md`)
-- [ ] Demo laptop's local MySQL (SQL so far applied only to a throwaway Docker MySQL)
+- [x] Unit tests: MQTT payload parser (incl. real-board payload `humid: 9%`)
+- [x] Hibernate creates all tables + DataSeeder rows on an empty database
+- [x] Physical ESP32 + breadboard: ingestion every 2s, LED 1..3 + all on/off confirmed in 0.26–0.37s, busy-LED block
+- [x] FE in a real Chrome: login, dashboard live, LED toggle, histories, zero console/HTTP errors
+- [ ] Run on the demo laptop's local MySQL (needs its credentials in `be/application-local.yml`)
 
 Remaining work: `development-roadmap.md`.

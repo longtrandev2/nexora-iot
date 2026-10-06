@@ -1,5 +1,20 @@
 # Project Changelog — NEXORA IoT
 
+## Backend simplification — 2026-10-06
+
+Same REST/WebSocket/MQTT contract (FE untouched); backend main code reduced from 52 files / 2464
+lines to 26 files / 1442 lines.
+- **DB**: Hibernate `ddl-auto: update` creates database + tables from the entities; `DataSeeder`
+  inserts admin/admin123, sensors and LED 1..3. `schema.sql` / `seed.sql` removed. Default target is
+  the local MySQL (`localhost:3306`, `createDatabaseIfNotExist=true`) — no Docker needed.
+- **Code**: 3 services (`AuthService`, `SensorService`, `DeviceService`), one `MqttService`
+  (scheduled reconnect, Spring events), one `ApiDto`, Lombok entities, JPQL history queries
+  (no native-SQL builder), `@Value` config instead of properties classes.
+- **Removed extras**: LED resync on ESP32 reboot / after a failed command (kept: `{}` resync on
+  broker connect), late-echo replay, `/topic` SEND blocking, profile URL validation.
+- **Tests**: Testcontainers integration tests removed (they needed Docker); MQTT parser unit tests kept
+  (+ real-board payload `humid: 9%`). Verified live on the physical ESP32 + FE in Chrome.
+
 ## v1.0.0-rc — 2026-10-06 (PR `feat/backend-and-database`)
 
 Backend + database + MQTT bridge to the ESP32, and the FE wired to it. The FE contract

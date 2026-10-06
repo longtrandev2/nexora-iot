@@ -1,8 +1,10 @@
 package vn.ptit.iot.nexora.service;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-/** Business error carrying the HTTP status + Vietnamese message rendered as {"error": msg}. */
+/** Error with an HTTP status + Vietnamese message, returned as {"error": message}. */
+@Getter
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
@@ -12,19 +14,7 @@ public class ApiException extends RuntimeException {
         this.status = status;
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
-
     public static ApiException badRequest(String message) {
         return new ApiException(HttpStatus.BAD_REQUEST, message);
-    }
-
-    public static ApiException unauthorized(String message) {
-        return new ApiException(HttpStatus.UNAUTHORIZED, message);
-    }
-
-    public static ApiException notFound(String message) {
-        return new ApiException(HttpStatus.NOT_FOUND, message);
     }
 }

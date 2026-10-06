@@ -21,13 +21,14 @@ Full step-by-step (DB setup, pre-flight, demo script): `docs/runbook-demo.md`.
 
 ```bash
 cd be
-# DB once: mysql -u root -p < src/main/resources/db/schema.sql, then seed.sql
-# Config: copy application-example.yml → application-local.yml (gitignored) and fill it,
-# or export env vars DB_PASSWORD, MQTT_HOST, MQTT_PASSWORD, JWT_SECRET (>= 32 chars)
-mvn spring-boot:run   # http://localhost:8080/api/v1/health → {"status":"up"}
-mvn test              # 36 tests, needs Docker running (Testcontainers MySQL)
+# Config: copy application-example.yml → application-local.yml (gitignored): MySQL user/password,
+# MQTT host/password, jwt.secret (>= 32 chars). Hibernate creates the DB + tables, DataSeeder the admin.
+mvn -DskipTests package
+java -jar target/nexora-be-1.0.0.jar   # http://localhost:8080/api/v1/health → {"status":"up"}
+mvn test                               # MQTT payload parser unit tests (no DB needed)
 ```
-On Windows run Maven from Git Bash after `cd` (PowerShell + the Vietnamese path crashes Maven).
+Don't use `mvn spring-boot:run` in a folder with Vietnamese characters (Windows breaks the classpath).
+Full backend guide (Vietnamese): `docs/backend-readme.md`.
 
 ### Frontend (fe/)
 
@@ -49,6 +50,7 @@ See `../iot-bai2-mqtt/README.md` for Mosquitto config + ESP32 firmware. TL;DR:
 
 ## Docs
 
+- `docs/backend-readme.md` — khởi động, cấu trúc BE từng file, FE ↔ BE, MQTT ↔ BE (tiếng Việt)
 - `docs/system-architecture.md` — system design, component interactions
 - `docs/db-schema-notes.md` — schema, data conventions, search patterns
 - `docs/runbook-demo.md` — step-by-step demo setup & verification
