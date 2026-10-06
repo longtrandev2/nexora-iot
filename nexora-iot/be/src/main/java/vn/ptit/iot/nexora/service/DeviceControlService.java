@@ -132,8 +132,21 @@ public class DeviceControlService {
         } catch (RuntimeException e) {
             log.error("Could not replay late device_response for {}", futures.keySet(), e);
         }
+        requestStateEcho();
         push.pushDevices();
         return new ApiException(status, message);
+    }
+
+    /**
+     * After a failed command the reverted state is only a guess (e.g. ESP32 rebooted mid-command
+     * with all LEDs off). "{}" makes the firmware echo its real state; the echo syncs the DB.
+     */
+    private void requestStateEcho() {
+        try {
+            mqtt.publish(controlTopic, MqttPayloadParser.STATE_ECHO_REQUEST);
+        } catch (RuntimeException e) {
+            log.debug("State echo request skipped: {}", e.getMessage());
+        }
     }
 
     /** Best effort: a DB outage here must not hide the original error from the caller. */

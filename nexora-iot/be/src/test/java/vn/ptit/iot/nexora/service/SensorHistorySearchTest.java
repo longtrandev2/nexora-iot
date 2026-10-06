@@ -17,8 +17,8 @@ import vn.ptit.iot.nexora.dto.SensorDtos.ChartPointDto;
 import vn.ptit.iot.nexora.dto.SensorDtos.SensorReadingDto;
 
 /**
- * Server-side search must equal the FE mock (`mock-iot-api.ts` matchesSearch +
- * `format-datetime.ts` timeSearchVariants) — verified on real MySQL semantics.
+ * Server-side history search (value prefix, multi-format time contains, kind filters, paging)
+ * verified on real MySQL semantics.
  */
 class SensorHistorySearchTest extends MySqlIntegrationTest {
 

@@ -2,7 +2,7 @@ package vn.ptit.iot.nexora.dto;
 
 import vn.ptit.iot.nexora.service.ApiException;
 
-/** Validated pagination input (defaults page=1, limit=20, like the FE mock). */
+/** Validated pagination input (defaults page=1, limit=20). */
 public record PageParams(int page, int limit) {
 
     public static final int DEFAULT_LIMIT = 20;

@@ -15,7 +15,7 @@ public final class DeviceDtos {
     private DeviceDtos() {
     }
 
-    /** `updated_at` is "" when the device was never toggled (FE mock seeds empty string). */
+    /** `updated_at` is "" when the device was never toggled (FE type is a non-null string). */
     public record DeviceDto(int devicesId, String devicesName, DeviceStatus status, String updatedAt) {
 
         public static DeviceDto from(Device d) {
@@ -29,7 +29,7 @@ public final class DeviceDtos {
 
     /**
      * API-09 body. FE sends camelCase `deviceId` (or `all`); spec/Postman `devices_id` accepted too.
-     * `all` (E-1) wins over `deviceId` and doubles as the action, like the mock.
+     * `all` (E-1) wins over `deviceId` and doubles as the action.
      */
     public record ControlRequest(@JsonProperty("deviceId") @JsonAlias("devices_id") Integer deviceId,
                                  ToggleAction all,

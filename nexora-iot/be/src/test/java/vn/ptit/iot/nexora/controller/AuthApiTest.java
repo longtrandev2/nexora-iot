@@ -53,7 +53,7 @@ class AuthApiTest extends MySqlIntegrationTest {
     }
 
     @Test
-    void wrongCredentialsAre401WithMockMessage() throws Exception {
+    void wrongCredentialsAre401WithVietnameseMessage() throws Exception {
         mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
                 .andExpect(status().isUnauthorized())
@@ -84,7 +84,7 @@ class AuthApiTest extends MySqlIntegrationTest {
                 .andExpect(jsonPath("$.fullname").value("Trần Khắc Long"))
                 .andExpect(jsonPath("$.bio").value("BE test"))
                 .andExpect(jsonPath("$.username").value("B21DCCN001"));
-        // Login compares against the CURRENT username (mock semantics).
+        // Login compares against the CURRENT username (username doubles as the editable student id).
         login("b21dccn001", "admin123");
         mvc.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + token))
                 .andExpect(jsonPath("$.bio").value("BE test"));

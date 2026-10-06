@@ -23,6 +23,9 @@ public final class MqttPayloadParser {
     private static final Pattern HUMID = Pattern.compile("humid" + NUMBER, Pattern.CASE_INSENSITIVE);
     private static final Pattern LIGHT = Pattern.compile("light" + NUMBER, Pattern.CASE_INSENSITIVE);
 
+    /** Matches no firmware command, so the ESP32 only re-publishes its full LED state. */
+    public static final String STATE_ECHO_REQUEST = "{}";
+
     private MqttPayloadParser() {
     }
 

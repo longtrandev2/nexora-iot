@@ -17,8 +17,8 @@ import vn.ptit.iot.nexora.repository.UserRepository;
 import vn.ptit.iot.nexora.security.JwtService;
 
 /**
- * Login / me / profile / password — behavior mirrors `fe/src/services/mock/mock-auth-store.ts`
- * (messages included) so the FE behaves identically on both adapters.
+ * Login / me / profile / password. The Vietnamese messages are shown verbatim by the FE
+ * (login page, profile modals), so keep them user-facing.
  */
 @Service
 public class AuthService {

@@ -110,6 +110,7 @@ class DeviceControlServiceTest extends MySqlIntegrationTest {
         assertThat(actionStatuses()).containsExactly("failed");
         assertThat(deviceStatus(1)).isEqualTo("on");
         assertThat(registry.isPending(1)).isFalse();
+        verify(mqtt).publish("device_control", "{}"); // revert is a guess: ask the ESP32 for its real state
     }
 
     @Test
@@ -174,7 +175,7 @@ class DeviceControlServiceTest extends MySqlIntegrationTest {
             CompletableFuture.runAsync(() -> responseHandler.handle("{led1:off,led2:off,led3:on}"),
                     CompletableFuture.delayedExecutor(1800, TimeUnit.MILLISECONDS));
             return null;
-        }).when(mqtt).publish(eq("device_control"), anyString());
+        }).when(mqtt).publish("device_control", "{led3:on}"); // only the command, not the "{}" resync
         assertThatThrownBy(() -> service.control(1, new ControlRequest(3, null, ToggleAction.on)))
                 .hasMessage("Thiết bị không phản hồi");
         assertThat(deviceStatus(3)).isEqualTo("off");

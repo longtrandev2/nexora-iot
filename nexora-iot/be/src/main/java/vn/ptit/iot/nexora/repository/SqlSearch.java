@@ -7,7 +7,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 /**
  * Small dynamic-WHERE builder for the history queries. Only fixed SQL fragments are appended;
  * every user value is a bound parameter (no injection surface).
- * Search semantics replicate `fe/src/utils/format-datetime.ts` (timeSearchVariants).
+ * Time search matches the formats the FE displays ("yyyy-MM-dd HH:mm:ss", "HH:mm:ss dd/MM/yyyy",
+ * "yyyy/MM/dd HH:mm:ss"), so "2026", "2026/09" or "14:3" all find what the user sees.
  */
 final class SqlSearch {
 

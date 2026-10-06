@@ -12,7 +12,7 @@ import vn.ptit.iot.nexora.dto.PagedResponse;
 import vn.ptit.iot.nexora.dto.SensorDtos.SensorReadingDto;
 
 /**
- * API-07 sensor log search (native MySQL: DATE_FORMAT / CAST). Semantics = FE mock `matchesSearch`:
+ * API-07 sensor log search (native MySQL: DATE_FORMAT / CAST). `search_kind` semantics:
  * temp|humid|light -> that sensor + value PREFIX; time -> time contains (3 formats);
  * all -> value prefix OR sensor name contains OR id contains OR time contains.
  */
@@ -20,7 +20,7 @@ import vn.ptit.iot.nexora.dto.SensorDtos.SensorReadingDto;
 public class SensorHistoryRepository {
 
     private static final String FROM = " FROM data_sensors ds JOIN sensors s ON s.id = ds.sensor_id";
-    /** MySQL prints DOUBLE like JS String(n): 25.1, 60, -1 — prefix parity with the mock. */
+    /** MySQL prints DOUBLE like the FE displays it (25.1, 60, -1), so "25" prefix-matches 25.1 not 2.25. */
     private static final String VALUE_PREFIX = "CAST(ds.value AS CHAR) LIKE :prefix";
 
     private static final RowMapper<SensorReadingDto> ROW = (rs, i) -> new SensorReadingDto(

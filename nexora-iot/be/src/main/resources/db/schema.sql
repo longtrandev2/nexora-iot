@@ -1,5 +1,5 @@
 -- NEXORA IoT — MySQL 8 schema (clean names; JSON keeps spec names sensors_id/devices_id).
--- Apply: mysql -u <user> -p < schema.sql   (then seed.sql, optionally seed-demo.sql)
+-- Apply: mysql -u <user> -p < schema.sql   (then seed.sql)
 -- Deltas vs spec ERD documented in nexora-iot/docs/db-schema-notes.md.
 
 CREATE DATABASE IF NOT EXISTS nexora CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

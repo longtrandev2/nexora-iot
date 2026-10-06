@@ -4,6 +4,7 @@ import jakarta.annotation.PreDestroy;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -31,6 +32,14 @@ public class MqttConnectionManager implements MqttPublisher, MqttCallback {
 
     private static final Logger log = LoggerFactory.getLogger(MqttConnectionManager.class);
     private static final long RETRY_SECONDS = 5;
+    /**
+     * Sent on every connect and whenever the ESP32 comes back (after a reboot its LEDs are all
+     * off whatever the DB says): the echo re-syncs devices.status with the breadboard.
+     */
+    private static final byte[] STATE_ECHO_REQUEST =
+            MqttPayloadParser.STATE_ECHO_REQUEST.getBytes(StandardCharsets.UTF_8);
+    /** The ESP32 publishes sensor_data every 2s; a longer gap means it was offline/rebooted. */
+    private static final long DEVICE_SILENCE_NANOS = TimeUnit.SECONDS.toNanos(10);
 
     private final MqttProperties props;
     private final DeviceResponseHandler deviceResponseHandler;
@@ -41,6 +50,8 @@ public class MqttConnectionManager implements MqttPublisher, MqttCallback {
         return t;
     });
     private volatile MqttClient client;
+    /** System.nanoTime() of the last sensor_data tick; 0 = none seen yet. */
+    private volatile long lastSensorDataAt;
 
     public MqttConnectionManager(MqttProperties props, DeviceResponseHandler deviceResponseHandler,
                                  SensorDataHandler sensorDataHandler) {
@@ -75,9 +86,7 @@ public class MqttConnectionManager implements MqttPublisher, MqttCallback {
             c.subscribe(new String[]{props.topics().sensorData(), props.topics().deviceResponse()}, new int[]{0, 0});
             log.info("MQTT connected to {}, subscribed {}, {}", props.serverUri(),
                     props.topics().sensorData(), props.topics().deviceResponse());
-            // "{}" matches no firmware command but makes the ESP32 echo its full LED state,
-            // re-syncing devices.status with the hardware after every (re)connect.
-            c.publish(props.topics().deviceControl(), "{}".getBytes(StandardCharsets.UTF_8), 1, false);
+            c.publish(props.topics().deviceControl(), STATE_ECHO_REQUEST, 1, false);
         } catch (MqttException | RuntimeException e) {
             log.warn("MQTT connect to {} failed ({}), retry in {}s", props.serverUri(), e.getMessage(), RETRY_SECONDS);
             forceDisconnect(c); // connected-but-unsubscribed must not look healthy to the next run
@@ -127,9 +136,33 @@ public class MqttConnectionManager implements MqttPublisher, MqttCallback {
                 deviceResponseHandler.handle(payload);
             } else if (topic.equals(props.topics().sensorData())) {
                 sensorDataHandler.handle(payload);
+                detectDeviceReturn();
             }
         } catch (RuntimeException e) {
             log.error("MQTT handler failed for {} '{}'", topic, payload, e);
+        }
+    }
+
+    /** First tick after a silence (or ever) -> ask for the LED state, off the Paho callback thread. */
+    private void detectDeviceReturn() {
+        long now = System.nanoTime();
+        boolean returned = lastSensorDataAt == 0 || now - lastSensorDataAt > DEVICE_SILENCE_NANOS;
+        lastSensorDataAt = now;
+        if (!returned) return;
+        log.info("ESP32 sensor stream (re)started, requesting LED state echo");
+        try {
+            connector.execute(() -> {
+                MqttClient c = client;
+                try {
+                    if (c != null && c.isConnected()) {
+                        c.publish(props.topics().deviceControl(), STATE_ECHO_REQUEST, 1, false);
+                    }
+                } catch (MqttException | RuntimeException e) {
+                    log.warn("LED state echo request failed: {}", e.getMessage());
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            log.debug("Shutting down, LED state echo skipped");
         }
     }
 
