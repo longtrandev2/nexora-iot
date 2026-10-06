@@ -1,71 +1,78 @@
 package vn.ptit.iot.nexora.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import vn.ptit.iot.nexora.config.CorsProperties;
-import vn.ptit.iot.nexora.dto.ErrorResponse;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Stateless JWT security. Public: login, logout (trivial, FE clears token anyway), health,
- * the /ws STOMP handshake (unauthenticated by design — single-user laptop demo).
+ * Stateless JWT security. Public: login, logout, health and the /ws WebSocket. Everything else
+ * needs "Authorization: Bearer <token>"; the controllers get the user id as principal.
  */
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService,
-                                                   AuthenticationEntryPoint entryPoint) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, JwtService jwt) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(AbstractHttpConfigurer::disable)
-                .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/logout").permitAll()
-                        .requestMatchers("/api/v1/health", "/ws", "/ws/**", "/error").permitAll()
+                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/health",
+                                "/ws/**", "/error").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
-                .addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
+                    res.setStatus(401);
+                    res.setContentType("application/json;charset=UTF-8");
+                    res.getWriter().write("{\"error\":\"Phiên đăng nhập đã hết hạn\"}");
+                }))
+                .addFilterBefore(jwtFilter(jwt), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
-    /** 401 body in the shared envelope; message depends on missing vs invalid/expired token. */
-    @Bean
-    public AuthenticationEntryPoint jsonAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        return (request, response, ex) -> {
-            boolean invalid = request.getAttribute(JwtAuthFilter.INVALID_TOKEN_ATTRIBUTE) != null;
-            String message = invalid ? "Phiên đăng nhập đã hết hạn" : "Chưa đăng nhập";
-            response.setStatus(401);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            objectMapper.writeValue(response.getOutputStream(), new ErrorResponse(message));
+    /** Reads the Bearer token; a valid one authenticates the request with the user id. */
+    private OncePerRequestFilter jwtFilter(JwtService jwt) {
+        return new OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+                    throws ServletException, IOException {
+                String header = req.getHeader("Authorization");
+                Integer userId = header != null && header.startsWith("Bearer ") ? jwt.userId(header.substring(7)) : null;
+                if (userId != null) {
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, List.of()));
+                }
+                chain.doFilter(req, res);
+            }
         };
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
+    CorsConfigurationSource corsConfigurationSource(@Value("${cors.origin}") String origin) {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(corsProperties.allowedOrigins());
+        config.setAllowedOrigins(List.of(origin));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -74,7 +81,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(10);
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

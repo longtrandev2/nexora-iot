@@ -17,8 +17,8 @@ Status: **v1.0.0-rc** (2026-10-05) — backend + database + MQTT bridge done on 
 | BE 07 — FE `HttpIotApi` adapter | REST + STOMP + polling fallback, Vite proxy | Done |
 | BE 08 — Tests, docs, E2E | 36 JUnit tests, Postman, docs, FE on real backend only | Done except hardware E2E |
 
-## Verified (2026-10-05)
-- 36/36 JUnit tests green on real MySQL 8.0 (Testcontainers).
+## Verified (2026-10-05, before the 10-06 simplification)
+- 36/36 JUnit tests green on real MySQL 8.0 (Testcontainers; removed with the simplification).
 - Live run with an authenticated Mosquitto broker + an ESP32 simulator that reproduces the
   firmware's parsing: control round-trip ~0.2–0.3 s, 504 timeout drill, E3 lock, overlapping
   commands, ingestion 3 rows / 2 s with `-1` kept, malformed payloads skipped, STOMP spoof rejected.
@@ -26,7 +26,9 @@ Status: **v1.0.0-rc** (2026-10-05) — backend + database + MQTT bridge done on 
   profile — no console or HTTP errors.
 
 ## Remaining before v1.0.0
-- [ ] Apply `schema.sql` → `seed.sql` on the local MySQL used for the demo.
+- [x] Backend simplified; Hibernate creates the schema (no SQL scripts, no Docker).
+- [x] Physical ESP32 + breadboard: ingestion and LED control confirmed (2026-10-06).
+- [ ] Point `be/application-local.yml` at the laptop's local MySQL (root or a user allowed to create DBs).
 - [ ] Full E2E with the physical ESP32 + breadboard (checklist in `runbook-demo.md`).
 - [ ] Tag `v1.0.0` after the hardware run-through.
 

@@ -1,5 +1,7 @@
 package vn.ptit.iot.nexora.controller;
 
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -8,51 +10,51 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import vn.ptit.iot.nexora.dto.AuthDtos.LoginRequest;
-import vn.ptit.iot.nexora.dto.AuthDtos.LoginResponse;
-import vn.ptit.iot.nexora.dto.AuthDtos.MessageResponse;
-import vn.ptit.iot.nexora.dto.AuthDtos.PasswordChangeRequest;
-import vn.ptit.iot.nexora.dto.AuthDtos.ProfileUpdateRequest;
-import vn.ptit.iot.nexora.dto.AuthDtos.UserDto;
+import vn.ptit.iot.nexora.dto.ApiDto.LoginRequest;
+import vn.ptit.iot.nexora.dto.ApiDto.LoginResponse;
+import vn.ptit.iot.nexora.dto.ApiDto.Message;
+import vn.ptit.iot.nexora.dto.ApiDto.PasswordChange;
+import vn.ptit.iot.nexora.dto.ApiDto.ProfileUpdate;
+import vn.ptit.iot.nexora.dto.ApiDto.UserDto;
 import vn.ptit.iot.nexora.service.AuthService;
 
-/** API-01..03 + E-4 (profile) + E-5 (password). Principal = user id from the JWT. */
+/** Health check + login/logout + profile. `userId` comes from the JWT. */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final AuthService auth;
 
-    public AuthController(AuthService authService) {
-        this.authService = authService;
+    @GetMapping("/health")
+    public Map<String, String> health() {
+        return Map.of("status", "up");
     }
 
-    @PostMapping("/login")
-    public LoginResponse login(@RequestBody(required = false) LoginRequest request) {
-        return authService.login(request);
+    @PostMapping("/auth/login")
+    public LoginResponse login(@RequestBody LoginRequest req) {
+        return auth.login(req);
     }
 
-    /** Stateless JWT: nothing to revoke server-side; the FE drops its token. */
-    @PostMapping("/logout")
-    public MessageResponse logout() {
-        return new MessageResponse(true, "Đăng xuất thành công");
+    /** JWT is stateless: nothing to revoke, the FE just drops its token. */
+    @PostMapping("/auth/logout")
+    public Message logout() {
+        return new Message(true, "Đăng xuất thành công");
     }
 
-    @GetMapping("/me")
+    @GetMapping("/auth/me")
     public UserDto me(@AuthenticationPrincipal Integer userId) {
-        return authService.me(userId);
+        return auth.me(userId);
     }
 
-    @PutMapping("/me")
-    public UserDto updateProfile(@AuthenticationPrincipal Integer userId,
-                                 @RequestBody(required = false) ProfileUpdateRequest patch) {
-        return authService.updateProfile(userId, patch);
+    @PutMapping("/auth/me")
+    public UserDto updateProfile(@AuthenticationPrincipal Integer userId, @RequestBody ProfileUpdate patch) {
+        return auth.updateProfile(userId, patch);
     }
 
-    @PatchMapping("/password")
-    public MessageResponse changePassword(@AuthenticationPrincipal Integer userId,
-                                          @RequestBody(required = false) PasswordChangeRequest request) {
-        authService.changePassword(userId, request);
-        return new MessageResponse(true, "Đổi mật khẩu thành công");
+    @PatchMapping("/auth/password")
+    public Message changePassword(@AuthenticationPrincipal Integer userId, @RequestBody PasswordChange req) {
+        auth.changePassword(userId, req);
+        return new Message(true, "Đổi mật khẩu thành công");
     }
 }

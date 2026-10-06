@@ -4,16 +4,21 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-/** sensors catalog (seeded): 1 Nhiệt độ °C, 2 Độ ẩm %, 3 Ánh sáng %. */
+/** Table `sensors`: fixed ids 1 Nhiệt độ, 2 Độ ẩm, 3 Ánh sáng (created by DataSeeder). */
 @Entity
 @Table(name = "sensors")
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Sensor {
 
-    public static final int TEMPERATURE_ID = 1;
-    public static final int HUMIDITY_ID = 2;
-    public static final int LIGHT_ID = 3;
+    public static final int TEMPERATURE = 1;
+    public static final int HUMIDITY = 2;
+    public static final int LIGHT = 3;
 
     @Id
     private Integer id;
@@ -23,12 +28,4 @@ public class Sensor {
 
     @Column(nullable = false, length = 10)
     private String unit;
-
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    public Integer getId() { return id; }
-    public String getName() { return name; }
-    public String getUnit() { return unit; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
 }

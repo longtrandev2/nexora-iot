@@ -7,11 +7,20 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-/** devices table (seeded LED 1..3; id N <-> MQTT `ledN`). */
+/** Table `devices`: LED 1..3 — id N is `ledN` in the ESP32 firmware. */
 @Entity
 @Table(name = "devices")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Device {
+
+    /** Lowercase = the exact values in the DB and in the FE JSON. loading = command in flight. */
+    public enum Status { on, off, loading }
 
     @Id
     private Integer id;
@@ -21,23 +30,12 @@ public class Device {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private DeviceStatus status;
+    private Status status = Status.off;
 
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    public Integer getId() { return id; }
-    public String getName() { return name; }
-    public DeviceStatus getStatus() { return status; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-
-    /** Status transition; every transition also stamps updated_at (FE "Cập nhật: ..."). */
-    public void changeStatus(DeviceStatus status, LocalDateTime at) {
-        this.status = status;
-        this.updatedAt = at;
+    public Device(Integer id, String name) {
+        this.id = id;
+        this.name = name;
     }
 }

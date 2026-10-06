@@ -1,18 +1,16 @@
-# Template for local secrets. Copy to be/application-local.yml (gitignored) and fill in.
-# Equivalent env vars: DB_URL, DB_USERNAME, DB_PASSWORD, MQTT_HOST, MQTT_PORT, MQTT_USERNAME,
-# MQTT_PASSWORD, MQTT_ENABLED, JWT_SECRET, CORS_ORIGIN, DEVICE_CONTROL_TIMEOUT_MS.
+# Copy to be/application-local.yml (gitignored) and fill in. Equivalent env vars:
+# DB_URL, DB_USERNAME, DB_PASSWORD, MQTT_HOST, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, JWT_SECRET.
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/nexora?useUnicode=true&characterEncoding=utf8
-    username: nexora
+    url: jdbc:mysql://localhost:3306/nexora?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
+    username: root
     password: YOUR_DB_PASSWORD
 
 mqtt:
-  enabled: true
   host: 172.20.10.2            # laptop IP running Mosquitto (ipconfig -> IPv4)
   port: 2005
   username: TranKhacLong
   password: YOUR_MQTT_PASSWORD
 
 jwt:
-  secret: YOUR_JWT_SECRET_AT_LEAST_32_CHARACTERS_LONG
+  secret: YOUR_JWT_SECRET_AT_LEAST_32_CHARACTERS
