@@ -17,10 +17,9 @@ import type {
 
 /**
  * IotApi — the ONLY seam between UI and data (adapter pattern).
- * Pages/hooks consume this interface, never a concrete adapter:
- *   - MockIotApi (default, VITE_API_MODE=mock): simulates real MQTT timing
- *     (2s sensor tick, ~500ms device confirm, humid=-1 gaps).
- *   - HttpIotApi (phase 08, VITE_API_MODE=http): REST + STOMP push.
+ * Pages/hooks consume this interface, never a concrete adapter. Implementation:
+ * HttpIotApi (REST /api/v1 + STOMP push from the Spring Boot backend, which
+ * bridges the ESP32 over MQTT: 2s sensor tick, hardware-confirmed control).
  *
  * Numbering follows the spec's 12-API contract + E-1..E-5 additions.
  */

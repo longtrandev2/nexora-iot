@@ -19,4 +19,7 @@ logs/
 *.log
 
 # Local Spring Boot config (secrets)
-be/**/application-local.yml
+**/application-local.yml
+
+# Java build output
+target/

@@ -30,22 +30,6 @@ export function formatDateTimeDisplay(value: DateTimeString): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
-/** Các dạng format của 1 time điểm dùng cho search contains (đã lowercase). */
-export function timeSearchVariants(value: DateTimeString): string[] {
-  const d = parseDateTime(value)
-  if (Number.isNaN(d.getTime())) return [value.toLowerCase()]
-  const hms = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  const ymd = `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
-  const dmy = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
-  return [value.toLowerCase(), `${hms} ${dmy}`.toLowerCase(), `${ymd} ${hms}`.toLowerCase()]
-}
-
-/** Search thời gian contains đa định dạng: "2026" → cả năm, "2026/09" → thêm tháng, "14:3" → giờ. */
-export function timeMatches(value: DateTimeString, needle: string): boolean {
-  if (!needle) return true
-  return timeSearchVariants(value).some((variant) => variant.includes(needle))
-}
-
 /**
  * "yyyy-MM-dd HH:mm:ss" → relative label vs now:
  * "Vừa xong" (<60s) · "X phút trước" · "X giờ trước" · "Hôm qua, HH:mm" · "HH:mm dd/MM".

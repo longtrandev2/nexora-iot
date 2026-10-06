@@ -17,8 +17,8 @@ export interface RealtimeDevices {
 /**
  * Live device list + control state machine:
  * idle → optimistic 'loading' → confirmed (on/off) | failed (revert + toast).
- * onDeviceStatus events merge last-write-wins per device id (mock pushes
- * 'loading' then the confirmed status, mirroring the real MQTT flow).
+ * onDeviceStatus events merge last-write-wins per device id (the backend pushes
+ * 'loading' then the status confirmed by the ESP32's device_response).
  */
 export function useRealtimeDevices(): RealtimeDevices {
   const api = useIotApi()
