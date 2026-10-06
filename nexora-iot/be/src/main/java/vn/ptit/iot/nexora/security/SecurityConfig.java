@@ -26,7 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Stateless JWT security. Public: login, logout, health and the /ws WebSocket. Everything else
+ * Stateless JWT security. Public: login, logout, health, Swagger UI and the /ws WebSocket. Everything else
  * needs "Authorization: Bearer <token>"; the controllers get the user id as principal.
  */
 @Configuration
@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/logout", "/api/v1/health",
-                                "/ws/**", "/error").permitAll()
+                                "/ws/**", "/error", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
                     res.setStatus(401);

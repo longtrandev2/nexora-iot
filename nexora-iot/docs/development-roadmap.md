@@ -28,7 +28,8 @@ Status: **v1.0.0-rc** (2026-10-05) — backend + database + MQTT bridge done on 
 ## Remaining before v1.0.0
 - [x] Backend simplified; Hibernate creates the schema (no SQL scripts, no Docker).
 - [x] Physical ESP32 + breadboard: ingestion and LED control confirmed (2026-10-06).
-- [ ] Point `be/application-local.yml` at the laptop's local MySQL (root or a user allowed to create DBs).
+- [x] Config via `be/.env` (template `be/.env.example`); Swagger UI at `/swagger-ui.html`.
+- [ ] Fill `be/.env` with the laptop's local MySQL password (root or a user allowed to create DBs).
 - [ ] Full E2E with the physical ESP32 + breadboard (checklist in `runbook-demo.md`).
 - [ ] Tag `v1.0.0` after the hardware run-through.
 

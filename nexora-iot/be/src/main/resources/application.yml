@@ -1,15 +1,12 @@
-# NEXORA IoT backend. Secrets live in be/application-local.yml (gitignored, auto-imported when
-# running from be/) or in the env vars below. Hibernate creates/updates the tables itself.
-server:
-  port: ${SERVER_PORT:8080}
-
+# NEXORA IoT backend. Values come from be/.env (copy be/.env.example) or real environment variables.
+# Hibernate creates the database tables itself.
 spring:
   config:
-    import: optional:file:./application-local.yml
+    import: optional:file:./.env[.properties]
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/nexora?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:YOUR_DB_PASSWORD}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
@@ -20,14 +17,17 @@ spring:
     format:
       date-time: yyyy-MM-dd HH:mm:ss       # from/to query params
 
+server:
+  port: ${SERVER_PORT:8080}
+
 mqtt:
-  host: ${MQTT_HOST:172.20.10.2}     # laptop Wi-Fi IP (DHCP — check ipconfig)
+  host: ${MQTT_HOST:localhost}
   port: ${MQTT_PORT:2005}
-  username: ${MQTT_USERNAME:TranKhacLong}
-  password: ${MQTT_PASSWORD:YOUR_MQTT_PASSWORD}
+  username: ${MQTT_USERNAME}
+  password: ${MQTT_PASSWORD}
 
 jwt:
-  secret: ${JWT_SECRET:YOUR_JWT_SECRET_AT_LEAST_32_CHARACTERS}
+  secret: ${JWT_SECRET}
 
 cors:
   origin: ${CORS_ORIGIN:http://localhost:5173}

@@ -21,8 +21,8 @@ Full step-by-step (DB setup, pre-flight, demo script): `docs/runbook-demo.md`.
 
 ```bash
 cd be
-# Config: copy application-example.yml → application-local.yml (gitignored): MySQL user/password,
-# MQTT host/password, jwt.secret (>= 32 chars). Hibernate creates the DB + tables, DataSeeder the admin.
+# Config: copy .env.example → .env (gitignored), fill DB_PASSWORD, MQTT_PASSWORD, JWT_SECRET (>= 32 chars).
+# Hibernate creates the DB + tables, DataSeeder the admin. Swagger: http://localhost:8080/swagger-ui.html
 mvn -DskipTests package
 java -jar target/nexora-be-1.0.0.jar   # http://localhost:8080/api/v1/health → {"status":"up"}
 mvn test                               # MQTT payload parser unit tests (no DB needed)
