@@ -17,21 +17,9 @@ Backend: `nexora-iot/be` (Spring Boot 3.5, Java 17, MySQL, MQTT, WebSocket). Hư
 **Lần đầu**
 1. MySQL local đang chạy. Không cần tạo bảng: Hibernate tự tạo database `nexora` + 5 bảng,
    `DataSeeder` tự thêm admin / 3 cảm biến / LED 1..3.
-2. `be/application-local.yml` (copy từ `be/application-example.yml`, file này không bị commit):
-   ```yaml
-   spring:
-     datasource:
-       url: jdbc:mysql://localhost:3306/nexora?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8
-       username: root            # user MySQL có quyền tạo database
-       password: <mật khẩu MySQL>
-   mqtt:
-     host: 172.20.10.2           # IP Wi-Fi laptop (ipconfig)
-     port: 2005
-     username: TranKhacLong
-     password: <mật khẩu MQTT>
-   jwt:
-     secret: <chuỗi bất kỳ ≥ 32 ký tự>
-   ```
+2. Copy `be/.env.example` thành `be/.env` (không bị commit) rồi điền:
+   `DB_PASSWORD` (MySQL root), `MQTT_PASSWORD`, `JWT_SECRET` (≥ 32 ký tự). Các dòng còn lại để mặc định:
+   `DB_URL` = MySQL local 3306, `MQTT_HOST=localhost` (broker chạy trên chính laptop).
 3. `cd nexora-iot\fe` → `npm install`.
 
 **Mỗi lần chạy**
@@ -44,7 +32,9 @@ Backend: `nexora-iot/be` (Spring Boot 3.5, Java 17, MySQL, MQTT, WebSocket). Hư
 
 - Không dùng `mvn spring-boot:run` trong thư mục có dấu tiếng Việt (Windows làm hỏng classpath →
   `ClassNotFoundException`). Dùng `java -jar` như trên.
-- Kiểm tra: http://localhost:8080/api/v1/health → `{"status":"up"}`; log có `MQTT connected to tcp://...:2005`.
+- Kiểm tra: http://localhost:8080/api/v1/health → `{"status":"up"}`; log có `MQTT connected to tcp://localhost:2005`.
+- **Swagger UI**: http://localhost:8080/swagger-ui.html — gọi `POST /api/v1/auth/login`, copy `token`,
+  bấm **Authorize**, dán token → thử mọi API. JSON OpenAPI: http://localhost:8080/v3/api-docs.
 - Test: `mvn test` (unit test bộ đọc payload MQTT, không cần DB).
 
 ---
@@ -54,8 +44,8 @@ Backend: `nexora-iot/be` (Spring Boot 3.5, Java 17, MySQL, MQTT, WebSocket). Hư
 ```
 be/
 ├── pom.xml                       # Spring Boot web, data-jpa, security, websocket; MySQL driver; Paho MQTT; jjwt; Lombok
-├── application-example.yml       # Mẫu cấu hình bí mật
-├── application-local.yml         # Cấu hình thật của máy (gitignored)
+├── .env.example                  # Mẫu biến cấu hình (DB, MQTT, JWT)
+├── .env                          # Giá trị thật của máy (gitignored)
 └── src/
     ├── main/java/vn/ptit/iot/nexora/
     │   ├── NexoraApplication.java
@@ -66,7 +56,7 @@ be/
     │   ├── mqtt/         MqttService, MqttPayloadParser                       → nói chuyện với ESP32
     │   ├── controller/   AuthController, SensorController, DeviceController, ApiExceptionHandler
     │   ├── security/     JwtService, SecurityConfig
-    │   └── config/       WebSocketConfig, DataSeeder
+    │   └── config/       WebSocketConfig, DataSeeder, OpenApiConfig (Swagger)
     ├── main/resources/application.yml
     └── test/java/.../mqtt/MqttPayloadParserTest.java
 ```
@@ -100,7 +90,8 @@ be/
 | `security/SecurityConfig.java` | Đọc header `Bearer`, quy định API nào cần đăng nhập, CORS, BCrypt |
 | `config/WebSocketConfig.java` | WebSocket `/ws`, kênh `/topic/sensors`, `/topic/devices` |
 | `config/DataSeeder.java` | Tạo dữ liệu ban đầu nếu DB trống: `admin`/`admin123`, 3 cảm biến, LED 1..3 |
-| `application.yml` | Cấu hình chung, mọi giá trị bí mật lấy từ `application-local.yml` hoặc biến môi trường |
+| `config/OpenApiConfig.java` | Swagger UI (`/swagger-ui.html`) + nút Authorize cho JWT |
+| `application.yml` | Cấu hình chung; giá trị lấy từ `be/.env` (hoặc biến môi trường cùng tên) |
 
 ---
 
@@ -167,8 +158,9 @@ DB khớp với breadboard.
 | Hiện tượng | Cách sửa |
 |---|---|
 | `ClassNotFoundException ... NexoraApplication` | Dùng `java -jar target\nexora-be-1.0.0.jar`, không dùng `mvn spring-boot:run` |
-| `jwt.secret must be at least 32 characters` | Điền `jwt.secret` trong `application-local.yml` |
-| `Access denied for user ...` khi khởi động | Sai user/mật khẩu MySQL trong `application-local.yml` |
+| `Could not resolve placeholder 'DB_URL'` | Chưa có `be/.env` hoặc không chạy trong thư mục `be/` |
+| `jwt.secret must be at least 32 characters` | Điền `JWT_SECRET` trong `be/.env` |
+| `Access denied for user ...` khi khởi động | Sai `DB_USERNAME`/`DB_PASSWORD` trong `be/.env` |
 | Log lặp `MQTT connect ... failed, retrying in 5s` | Broker chưa chạy / sai IP / sai mật khẩu MQTT |
 | Bấm LED → 504 sau 30 s | ESP32 mất mạng hoặc `MQTT_HOST` trong firmware sai |
 | Dashboard đứng yên | ESP32 không gửi `sensor_data` (xem Serial Monitor) |

@@ -172,6 +172,6 @@ See `db-schema-notes.md` → "Known limits" for detailed constraints.
 - [x] Hibernate creates all tables + DataSeeder rows on an empty database
 - [x] Physical ESP32 + breadboard: ingestion every 2s, LED 1..3 + all on/off confirmed in 0.26–0.37s, busy-LED block
 - [x] FE in a real Chrome: login, dashboard live, LED toggle, histories, zero console/HTTP errors
-- [ ] Run on the demo laptop's local MySQL (needs its credentials in `be/application-local.yml`)
+- [ ] Run on the demo laptop's local MySQL (needs its credentials in `be/.env`)
 
 Remaining work: `development-roadmap.md`.
