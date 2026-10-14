@@ -62,7 +62,7 @@ export function SensorHistoryPage() {
           value={term}
           onChange={setTerm}
           onEnter={search}
-          placeholder="Ví dụ: 25, 14:30, 2026-09-23..."
+          placeholder="Ví dụ: 25, 14:30, 14/10/2026 16:12:51..."
           className="flex-1 min-w-[240px]"
         />
         <FilterSelect

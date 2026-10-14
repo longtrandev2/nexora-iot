@@ -59,7 +59,7 @@ export function OnoffHistoryPage() {
           value={search}
           onChange={setSearch}
           onEnter={searchAll}
-          placeholder="Ví dụ: 2026, 2026/09, 14:30..."
+          placeholder="Ví dụ: 14/10/2026, 14:30, 14/10/2026 16:12:51..."
           className="flex-1 min-w-[240px]"
         />
         <FilterSelect

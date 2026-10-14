@@ -23,11 +23,11 @@ export function parseDateTime(value: DateTimeString): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, ss ?? 0)
 }
 
-/** "yyyy-MM-dd HH:mm:ss" → table display "HH:mm:ss dd/MM/yyyy" (đủ giây + ngày tháng năm). */
+/** "yyyy-MM-dd HH:mm:ss" → table display "dd/MM/yyyy HH:mm:ss" (ngày tháng năm + đủ giây; BE search hiểu đúng dạng này). */
 export function formatDateTimeDisplay(value: DateTimeString): string {
   const d = parseDateTime(value)
   if (Number.isNaN(d.getTime())) return value
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 /**
