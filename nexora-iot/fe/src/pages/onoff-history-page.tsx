@@ -58,6 +58,7 @@ export function OnoffHistoryPage() {
           label="TÌM KIẾM THỜI GIAN"
           value={search}
           onChange={setSearch}
+          onEnter={searchAll}
           placeholder="Ví dụ: 2026, 2026/09, 14:30..."
           className="flex-1 min-w-[240px]"
         />

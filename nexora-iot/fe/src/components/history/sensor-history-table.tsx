@@ -1,3 +1,4 @@
+import { CopyTextButton } from '@/components/ui/copy-text-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { formatDateTimeDisplay } from '@/utils/format-datetime'
@@ -39,7 +40,12 @@ export function SensorHistoryTable({ rows, sensors }: { rows: SensorReading[]; s
                   {row.value === -1 ? '--' : row.value}
                 </td>
                 <td className="px-6 py-4 text-outline">{sensor?.unit ?? ''}</td>
-                <td className="whitespace-nowrap px-6 py-4 text-on-surface-variant">{formatDateTimeDisplay(row.time)}</td>
+                <td className="whitespace-nowrap px-6 py-4 text-on-surface-variant">
+                  <span className="inline-flex items-center gap-1">
+                    {formatDateTimeDisplay(row.time)}
+                    <CopyTextButton text={formatDateTimeDisplay(row.time)} label="Sao chép thời gian" />
+                  </span>
+                </td>
                 <td className="px-6 py-4">
                   <StatusBadge tone={status.tone === 'normal' ? 'normal' : status.tone === 'high' ? 'high' : 'none'} label={status.label} />
                 </td>

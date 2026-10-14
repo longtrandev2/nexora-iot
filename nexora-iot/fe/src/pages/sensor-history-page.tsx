@@ -58,6 +58,7 @@ export function SensorHistoryPage() {
           label="GIÁ TRỊ TÌM KIẾM"
           value={term}
           onChange={setTerm}
+          onEnter={search}
           placeholder="Ví dụ: 25, 14:30, 2026-09-23..."
           className="flex-1 min-w-[240px]"
         />
