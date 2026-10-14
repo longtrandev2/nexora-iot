@@ -76,6 +76,16 @@ export class HttpIotApi implements IotApi {
     return data
   }
 
+  async getRainThreshold(): Promise<number> {
+    const { data } = await apiClient.get<{ value: number }>('/settings/rain-threshold')
+    return data.value
+  }
+
+  async updateRainThreshold(value: number): Promise<number> {
+    const { data } = await apiClient.put<{ value: number }>('/settings/rain-threshold', { value })
+    return data.value
+  }
+
   // ---- Devices ----
 
   async getDevices(): Promise<Device[]> {

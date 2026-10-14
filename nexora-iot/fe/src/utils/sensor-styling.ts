@@ -33,7 +33,17 @@ export const SENSOR_DISPLAY: Record<number, SensorDisplayConfig> = {
     iconClasses: 'bg-tertiary-container/20 text-tertiary',
     hoverGradient: 'from-tertiary-container/10',
   },
+  4: {
+    icon: 'rainy',
+    color: '#0e7490',
+    iconClasses: 'bg-[#0e7490]/10 text-[#0e7490]',
+    hoverGradient: 'from-[#0e7490]/10',
+  },
 }
+
+/** sensors_id of "Độ mưa" — its status uses the user-set threshold instead of a fixed one. */
+export const RAIN_SENSOR_ID = 4
+export const DEFAULT_RAIN_THRESHOLD = 70
 
 export type SensorTone = 'normal' | 'high' | 'none'
 
@@ -44,10 +54,16 @@ export interface SensorStatus {
 
 /**
  * FE-computed status pill (locked thresholds): temp ≥ 35 °C or light ≥ 80 %
- * → "Cao"; humid -1 (DHT11 absent) → "Không có dữ liệu"; else "Bình thường".
+ * → "Cao"; rain ≥ rainThreshold → "Vượt ngưỡng"; humid -1 (DHT11 absent)
+ * → "Không có dữ liệu"; else "Bình thường".
  */
-export function sensorStatus(sensorsId: number, value: number | undefined): SensorStatus {
+export function sensorStatus(
+  sensorsId: number,
+  value: number | undefined,
+  rainThreshold: number = DEFAULT_RAIN_THRESHOLD,
+): SensorStatus {
   if (value === undefined || value === -1) return { label: 'Không có dữ liệu', tone: 'none' }
+  if (sensorsId === RAIN_SENSOR_ID && value >= rainThreshold) return { label: 'Vượt ngưỡng', tone: 'high' }
   if ((sensorsId === 1 && value >= 35) || (sensorsId === 3 && value >= 80)) {
     return { label: 'Cao', tone: 'high' }
   }

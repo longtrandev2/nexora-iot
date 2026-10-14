@@ -37,7 +37,7 @@ public class SensorService {
     private final DataSensorRepository data;
     private final SimpMessagingTemplate ws;
 
-    /** sensor_data (every 2s) -> 3 rows with the same time -> pushed to /topic/sensors. */
+    /** sensor_data (every 2s) -> 3 rows (+ rain when sent) with the same time -> pushed to /topic/sensors. */
     @EventListener(condition = "#msg.topic() == T(vn.ptit.iot.nexora.mqtt.MqttService).SENSOR_DATA")
     public void onSensorData(MqttService.Message msg) {
         MqttPayloadParser.SensorTick tick = MqttPayloadParser.parseSensors(msg.payload());
@@ -46,10 +46,12 @@ public class SensorService {
             return;
         }
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
-        List<DataSensor> rows = data.saveAll(List.of(
+        List<DataSensor> batch = new ArrayList<>(List.of(
                 new DataSensor(Sensor.TEMPERATURE, tick.temp(), now),
                 new DataSensor(Sensor.HUMIDITY, tick.humid(), now),   // -1 kept: FE shows "Không có dữ liệu"
                 new DataSensor(Sensor.LIGHT, tick.light(), now)));
+        if (tick.rain() != null) batch.add(new DataSensor(Sensor.RAIN, tick.rain(), now));
+        List<DataSensor> rows = data.saveAll(batch);
         ws.convertAndSend("/topic/sensors", rows.stream().map(SensorReading::from).toList());
     }
 
@@ -88,7 +90,7 @@ public class SensorService {
         return points;
     }
 
-    /** search_kind: all | temp | humid | light | time (see DataSensorRepository.search). */
+    /** search_kind: all | temp | humid | light | rain | time (see DataSensorRepository.search). */
     public Paged<SensorReading> history(Integer sensorId, LocalDateTime from, LocalDateTime to, String search,
                                         String kind, Integer page, Integer limit) {
         String k = kind == null || kind.isBlank() ? "all" : kind;
@@ -97,6 +99,7 @@ public class SensorService {
             case "temp" -> sensor = Sensor.TEMPERATURE;
             case "humid" -> sensor = Sensor.HUMIDITY;
             case "light" -> sensor = Sensor.LIGHT;
+            case "rain" -> sensor = Sensor.RAIN;
             case "all", "time" -> { }
             default -> throw ApiException.badRequest("search_kind không hợp lệ");
         }
@@ -104,7 +107,7 @@ public class SensorService {
         if (sensorId != null && !sensorId.equals(sensor)) {   // e.g. sensors_id=2 with kind=temp
             return new Paged<>(List.of(), pageable.getPageNumber() + 1, pageable.getPageSize(), 0);
         }
-        String mode = switch (k) { case "temp", "humid", "light" -> "value"; default -> k; };
+        String mode = switch (k) { case "temp", "humid", "light", "rain" -> "value"; default -> k; };
         return Paged.of(data.search(sensor, from, to, needle(search), mode, pageable), SensorReading::from);
     }
 

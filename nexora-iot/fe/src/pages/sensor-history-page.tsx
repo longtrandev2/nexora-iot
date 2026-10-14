@@ -5,6 +5,7 @@ import type { FilterOption } from '@/components/ui/filter-controls'
 import { PageHeader } from '@/components/ui/page-header'
 import { Pagination } from '@/components/ui/pagination'
 import { usePagedFetch } from '@/hooks/use-paged-fetch'
+import { useRainThreshold } from '@/hooks/use-rain-threshold'
 import { useIotApi } from '@/services/iot-api-context'
 import type { SensorHistoryQuery, SensorInfo, SensorReading, SensorSearchKind } from '@/types/iot'
 
@@ -15,6 +16,7 @@ const KIND_OPTIONS: FilterOption[] = [
   { value: 'temp', label: 'Nhiệt độ' },
   { value: 'humid', label: 'Độ ẩm' },
   { value: 'light', label: 'Ánh sáng' },
+  { value: 'rain', label: 'Độ mưa' },
   { value: 'time', label: 'Thời gian' },
 ]
 
@@ -22,6 +24,7 @@ const KIND_OPTIONS: FilterOption[] = [
 export function SensorHistoryPage() {
   const api = useIotApi()
   const [sensors, setSensors] = useState<SensorInfo[]>([])
+  const { threshold: rainThreshold } = useRainThreshold()
   // UI search state (chỉ apply khi bấm "Tìm kiếm")
   const [kind, setKind] = useState<SensorSearchKind>('all')
   const [term, setTerm] = useState('')
@@ -81,7 +84,7 @@ export function SensorHistoryPage() {
       </FilterBar>
 
       <div className={`overflow-hidden rounded-xl border border-outline-variant bg-surface shadow-sm transition-opacity ${loading ? 'opacity-40' : ''}`}>
-        <SensorHistoryTable rows={rows} sensors={sensors} />
+        <SensorHistoryTable rows={rows} sensors={sensors} rainThreshold={rainThreshold} />
         <Pagination page={page} limit={limit} total={total} onPageChange={setPage} onLimitChange={changeLimit} />
       </div>
     </>

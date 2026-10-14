@@ -54,7 +54,7 @@ export interface LoginResponse {
 
 // ---------- Sensors ----------
 
-/** Sensor catalog entry (API-06): 1 Nhiệt độ °C, 2 Độ ẩm %, 3 Ánh sáng %. */
+/** Sensor catalog entry (API-06): 1 Nhiệt độ °C, 2 Độ ẩm %, 3 Ánh sáng %, 4 Độ mưa %. */
 export interface SensorInfo {
   sensors_id: number
   sensors_name: string
@@ -85,7 +85,7 @@ export interface ChartPoint {
 export type ChartData = ChartPoint[]
 
 /** Loại giá trị định nghĩa cách search lịch sử cảm biến (API-07 search). */
-export type SensorSearchKind = 'all' | 'temp' | 'humid' | 'light' | 'time'
+export type SensorSearchKind = 'all' | 'temp' | 'humid' | 'light' | 'rain' | 'time'
 
 /** API-07 query: filter + search toàn log + server-side pagination. */
 export interface SensorHistoryQuery {

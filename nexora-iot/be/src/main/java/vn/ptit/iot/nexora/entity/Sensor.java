@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** Table `sensors`: fixed ids 1 Nhiệt độ, 2 Độ ẩm, 3 Ánh sáng (created by DataSeeder). */
+/** Table `sensors`: fixed ids 1 Nhiệt độ, 2 Độ ẩm, 3 Ánh sáng, 4 Độ mưa (created by DataSeeder). */
 @Entity
 @Table(name = "sensors")
 @Getter
@@ -19,6 +19,7 @@ public class Sensor {
     public static final int TEMPERATURE = 1;
     public static final int HUMIDITY = 2;
     public static final int LIGHT = 3;
+    public static final int RAIN = 4;
 
     @Id
     private Integer id;

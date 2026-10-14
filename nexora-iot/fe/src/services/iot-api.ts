@@ -45,6 +45,10 @@ export interface IotApi {
   getSensors(): Promise<SensorInfo[]>
   /** API-07: filtered + paginated sensor log, newest first. */
   getSensorHistory(query: SensorHistoryQuery): Promise<Paged<SensorReading>>
+  /** Rain warning threshold in % (stored in BE, default 70). */
+  getRainThreshold(): Promise<number>
+  /** Saves the rain threshold (0..100); throws ApiError(400) when out of range. */
+  updateRainThreshold(value: number): Promise<number>
 
   // ---- Devices ----
   /** API-08: device list incl. live status. */

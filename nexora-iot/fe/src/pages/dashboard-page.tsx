@@ -1,15 +1,19 @@
 import { LedStatusCard } from '@/components/ui/led-status-card'
 import { PageHeader } from '@/components/ui/page-header'
 import { RealtimeSensorChart } from '@/components/dashboard/realtime-sensor-chart'
+import { RainThresholdSetting } from '@/components/dashboard/rain-threshold-setting'
 import { SensorValueCard } from '@/components/dashboard/sensor-value-card'
+import { useRainThreshold } from '@/hooks/use-rain-threshold'
 import { useRealtimeDevices } from '@/hooks/use-realtime-devices'
 import { useRealtimeSensors } from '@/hooks/use-realtime-sensors'
+import { RAIN_SENSOR_ID } from '@/utils/sensor-styling'
 import type { ToggleAction } from '@/types/iot'
 
 /** Tổng quan (UC02): live sensor cards + realtime chart + LED toggles. */
 export function DashboardPage() {
   const { sensors, readings } = useRealtimeSensors()
   const { devices, busy, control, controlAll } = useRealtimeDevices()
+  const { threshold: rainThreshold, save: saveRainThreshold } = useRainThreshold()
 
   const handleAll = (action: ToggleAction): void => {
     if (busy) return
@@ -31,10 +35,20 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* Sensor summary cards */}
-      <div className="grid shrink-0 grid-cols-1 gap-gutter md:grid-cols-3">
+      {/* Sensor summary cards (Độ mưa card carries the threshold setting + blink alert) */}
+      <div className="grid shrink-0 grid-cols-1 gap-gutter md:grid-cols-2 xl:grid-cols-4">
         {sensors.map((sensor) => (
-          <SensorValueCard key={sensor.sensors_id} sensor={sensor} readings={readings[sensor.sensors_id] ?? []} />
+          <SensorValueCard
+            key={sensor.sensors_id}
+            sensor={sensor}
+            readings={readings[sensor.sensors_id] ?? []}
+            rainThreshold={rainThreshold}
+            headerAction={
+              sensor.sensors_id === RAIN_SENSOR_ID ? (
+                <RainThresholdSetting threshold={rainThreshold} onSave={saveRainThreshold} />
+              ) : null
+            }
+          />
         ))}
       </div>
 

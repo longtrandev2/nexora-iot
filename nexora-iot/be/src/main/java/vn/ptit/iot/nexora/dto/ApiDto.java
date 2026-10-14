@@ -76,6 +76,12 @@ public final class ApiDto {
     public record ChartPoint(@JsonFormat(pattern = TIME_PATTERN) LocalDateTime time, double value) {
     }
 
+    // ---------- settings ----------
+
+    /** Rain warning threshold in % (0..100). */
+    public record RainThreshold(Integer value) {
+    }
+
     // ---------- devices ----------
 
     /** updated_at is "" when the LED was never switched. */

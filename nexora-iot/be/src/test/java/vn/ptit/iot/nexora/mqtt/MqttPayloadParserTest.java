@@ -13,19 +13,25 @@ class MqttPayloadParserTest {
     @Test
     void readsSensorTick() {
         assertThat(MqttPayloadParser.parseSensors("{temp:29.50C,humid:60%,light:45%}"))
-                .isEqualTo(new SensorTick(29.5, 60, 45));
+                .isEqualTo(new SensorTick(29.5, 60, 45, null));
     }
 
     @Test
     void readsPaddedSingleDigitHumidityFromRealBoard() {
         assertThat(MqttPayloadParser.parseSensors("{temp:36.54C,humid: 9%,light:55%}"))
-                .isEqualTo(new SensorTick(36.54, 9, 55));
+                .isEqualTo(new SensorTick(36.54, 9, 55, null));
     }
 
     @Test
     void keepsMissingHumidityMarker() {
         assertThat(MqttPayloadParser.parseSensors("{temp:25.00C,humid:-1%,light:67%}"))
-                .isEqualTo(new SensorTick(25, -1, 67));
+                .isEqualTo(new SensorTick(25, -1, 67, null));
+    }
+
+    @Test
+    void readsOptionalRain() {
+        assertThat(MqttPayloadParser.parseSensors("{temp:29.50C,humid:60%,light:45%,rain:73%}"))
+                .isEqualTo(new SensorTick(29.5, 60, 45, 73.0));
     }
 
     @Test

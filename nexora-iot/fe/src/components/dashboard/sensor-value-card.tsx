@@ -1,21 +1,28 @@
 import { useMemo } from 'react'
-import { calcTrend, SENSOR_DISPLAY, sensorStatus } from '@/utils/sensor-styling'
+import type { ReactNode } from 'react'
+import { calcTrend, RAIN_SENSOR_ID, SENSOR_DISPLAY, sensorStatus } from '@/utils/sensor-styling'
 import type { SensorInfo, SensorReading } from '@/types/iot'
 
 interface SensorValueCardProps {
   sensor: SensorInfo
   /** Oldest → newest tail (≤12 readings); empty until first load/tick. */
   readings: SensorReading[]
+  /** Rain warning threshold (%); only used by the "Độ mưa" card. */
+  rainThreshold?: number
+  /** Optional control in the card's top-right corner (e.g. threshold setting). */
+  headerAction?: ReactNode
 }
 
 /** Metric card per dashboard.html: icon + status pill, big value, trend badge, sparkline. */
-export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
+export function SensorValueCard({ sensor, readings, rainThreshold, headerAction }: SensorValueCardProps) {
   const display = SENSOR_DISPLAY[sensor.sensors_id]
   const values = useMemo(() => readings.map((r) => r.value), [readings])
   const latest = values.length > 0 ? values[values.length - 1] : undefined
   const hasData = latest !== undefined && latest !== -1
-  const status = sensorStatus(sensor.sensors_id, latest)
+  const status = sensorStatus(sensor.sensors_id, latest, rainThreshold)
   const trend = calcTrend(values)
+  // Rain ≥ threshold → the whole card blinks (sensor-alert-blink in global.css).
+  const alert = sensor.sensors_id === RAIN_SENSOR_ID && status.tone === 'high'
 
   const pillClasses =
     status.tone === 'high'
@@ -26,9 +33,13 @@ export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
     trend?.dir === 'up' ? 'text-error bg-error-container/50' : 'text-secondary bg-secondary-container/50'
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-shadow duration-300 hover:shadow-card-hover">
+    <div
+      className={`group relative rounded-xl border border-outline-variant bg-surface-container-lowest p-4 transition-shadow duration-300 hover:shadow-card-hover ${
+        alert ? 'sensor-alert-blink' : ''
+      }`}
+    >
       <div
-        className={`absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${display.hoverGradient}`}
+        className={`absolute inset-0 rounded-xl bg-gradient-to-br to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${display.hoverGradient}`}
       />
       <div className="relative z-10 mb-2 flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -44,6 +55,7 @@ export function SensorValueCard({ sensor, readings }: SensorValueCardProps) {
             </span>
           </div>
         </div>
+        {headerAction}
       </div>
       <div className="relative z-10 mb-1 flex items-baseline gap-3">
         <span className="font-display-metrics text-display-metrics tracking-tight text-on-background">

@@ -19,11 +19,13 @@ public final class MqttPayloadParser {
     private static final Pattern TEMP = Pattern.compile("temp" + NUMBER, Pattern.CASE_INSENSITIVE);
     private static final Pattern HUMID = Pattern.compile("humid" + NUMBER, Pattern.CASE_INSENSITIVE);
     private static final Pattern LIGHT = Pattern.compile("light" + NUMBER, Pattern.CASE_INSENSITIVE);
+    private static final Pattern RAIN = Pattern.compile("rain" + NUMBER, Pattern.CASE_INSENSITIVE);
 
     private MqttPayloadParser() {
     }
 
-    public record SensorTick(double temp, double humid, double light) {
+    /** rain is null when the firmware does not send it (older sketch). */
+    public record SensorTick(double temp, double humid, double light, Double rain) {
     }
 
     /** led number -> state; empty when nothing matches. */
@@ -34,13 +36,14 @@ public final class MqttPayloadParser {
         return states;
     }
 
-    /** The 3 values of one tick, or null if any is missing. */
+    /** The values of one tick, or null if temp/humid/light is missing (rain is optional). */
     public static SensorTick parseSensors(String payload) {
         if (payload == null) return null;
         Double temp = number(TEMP, payload);
         Double humid = number(HUMID, payload);
         Double light = number(LIGHT, payload);
-        return temp == null || humid == null || light == null ? null : new SensorTick(temp, humid, light);
+        return temp == null || humid == null || light == null
+                ? null : new SensorTick(temp, humid, light, number(RAIN, payload));
     }
 
     private static Double number(Pattern pattern, String payload) {

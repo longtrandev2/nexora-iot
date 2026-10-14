@@ -1,5 +1,6 @@
 package vn.ptit.iot.nexora.config;
 
+import java.util.List;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ import vn.ptit.iot.nexora.repository.UserRepository;
 
 /**
  * Creates the starting data on an empty DB (runs at every start, inserts only what is missing):
- * account admin / admin123, the 3 sensors and LED 1..3 (id N = ledN on the ESP32).
+ * account admin / admin123, the 4 sensors and LED 1..3 (id N = ledN on the ESP32).
  */
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -43,10 +44,12 @@ public class DataSeeder implements CommandLineRunner {
             admin.setBio("Sinh viên Học viện Công nghệ Bưu chính Viễn thông.");
             users.save(admin);
         }
-        if (sensors.count() == 0) {
-            sensors.save(new Sensor(Sensor.TEMPERATURE, "Nhiệt độ", "°C"));
-            sensors.save(new Sensor(Sensor.HUMIDITY, "Độ ẩm", "%"));
-            sensors.save(new Sensor(Sensor.LIGHT, "Ánh sáng", "%"));
+        for (Sensor s : List.of(
+                new Sensor(Sensor.TEMPERATURE, "Nhiệt độ", "°C"),
+                new Sensor(Sensor.HUMIDITY, "Độ ẩm", "%"),
+                new Sensor(Sensor.LIGHT, "Ánh sáng", "%"),
+                new Sensor(Sensor.RAIN, "Độ mưa", "%"))) {   // added later: existing DBs get it on next start
+            if (!sensors.existsById(s.getId())) sensors.save(s);
         }
         for (int id = 1; id <= 3; id++) {
             if (!devices.existsById(id)) devices.save(new Device(id, "LED " + id));

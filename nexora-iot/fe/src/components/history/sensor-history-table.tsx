@@ -8,7 +8,16 @@ import type { SensorInfo, SensorReading } from '@/types/iot'
 const HEAD = ['ID', 'TÊN CẢM BIẾN', 'GIÁ TRỊ', 'ĐƠN VỊ', 'THỜI GIAN GHI NHẬN', 'TRẠNG THÁI']
 
 /** Sensor log table (API-07 rows); status badge is FE-computed (thresholds). */
-export function SensorHistoryTable({ rows, sensors }: { rows: SensorReading[]; sensors: SensorInfo[] }) {
+export function SensorHistoryTable({
+  rows,
+  sensors,
+  rainThreshold,
+}: {
+  rows: SensorReading[]
+  sensors: SensorInfo[]
+  /** Rain rows ≥ this % show "Vượt ngưỡng". */
+  rainThreshold?: number
+}) {
   if (rows.length === 0) return <EmptyState icon="search_off" />
   const sensorById = new Map(sensors.map((s) => [s.sensors_id, s]))
 
@@ -28,7 +37,7 @@ export function SensorHistoryTable({ rows, sensors }: { rows: SensorReading[]; s
           {rows.map((row) => {
             const sensor = sensorById.get(row.sensors_id)
             const display = SENSOR_DISPLAY[row.sensors_id]
-            const status = sensorStatus(row.sensors_id, row.value)
+            const status = sensorStatus(row.sensors_id, row.value, rainThreshold)
             return (
               <tr key={row.id} className="transition-colors hover:bg-primary/5">
                 <td className="px-6 py-4 font-semibold text-on-surface">{row.id}</td>
