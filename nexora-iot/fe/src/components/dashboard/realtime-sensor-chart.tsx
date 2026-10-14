@@ -14,35 +14,33 @@ import { SENSOR_DISPLAY } from '@/utils/sensor-styling'
 import type { SensorInfo } from '@/types/iot'
 import { ChartTooltip } from './chart-tooltip'
 import type { ChartMeta, ChartRow } from './chart-tooltip'
+import { buildTimeTicks, CHART_RANGES, formatTimeTick } from './chart-time-ranges'
+import type { ChartRangeKey } from './chart-time-ranges'
 
 /** Select value: one sensors_id, or 'all' to overlay every sensor. */
 type SensorFilter = number | 'all'
 
-const RANGES = [
-  { key: '1h', label: '1h', ms: 3600_000 },
-  { key: '6h', label: '6h', ms: 6 * 3600_000 },
-  { key: '24h', label: '24h', ms: 24 * 3600_000 },
-  { key: '7d', label: '7d', ms: 7 * 24 * 3600_000 },
-] as const
-
-type RangeKey = (typeof RANGES)[number]['key']
-const MAX_POINTS = 200
-const pad = (n: number): string => String(n).padStart(2, '0')
+/** Points per window: BE averages the range into this many slots; live ticks are thinned to the same step. */
+const MAX_POINTS = 360
+const NOW_REFRESH_MS = 2000
 
 /**
- * Realtime area chart: initial getSensorChart window per (filter, range),
- * then live appends from the 2s onSensorData tick (UC02 "no reload").
+ * Realtime area chart: initial getSensorChart window per (filter, range) —
+ * the whole range, averaged server-side — then live appends from the 2s
+ * onSensorData tick (UC02 "no reload"). X axis = fixed [now - range, now].
  * Filter "Tất cả" overlays all 3 sensors on one chart — first series uses the
  * left axis, the rest share the right axis (°C vs % scales differ).
  */
 export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
   const api = useIotApi()
   const [filter, setFilter] = useState<SensorFilter>(sensors[0]?.sensors_id ?? 1)
-  const [rangeKey, setRangeKey] = useState<RangeKey>('6h')
+  const [rangeKey, setRangeKey] = useState<ChartRangeKey>('30m')
   const [rows, setRows] = useState<ChartRow[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  const [now, setNow] = useState<number>(() => Date.now())
 
-  const range = RANGES.find((r) => r.key === rangeKey)!
+  const range = CHART_RANGES.find((r) => r.key === rangeKey)!
+  const stepMs = range.ms / MAX_POINTS
   const isAll = filter === 'all'
   const active = isAll ? sensors : sensors.filter((s) => s.sensors_id === filter)
   // Stable effect dep: sensors arrives async, array identity changes per tick.
@@ -98,33 +96,34 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
   }, [api, idsKey, range.ms])
 
   // Live tail: append matching ticks (fill into the row of their timestamp),
-  // trim to window + point cap.
+  // keep at most one new row per stepMs so long ranges stay ~MAX_POINTS, trim to window.
   useEffect(() => {
     const wanted = new Set(idsKey.split(',').map(Number))
     return api.onSensorData((tick) => {
       const windowStart = Date.now() - range.ms
       setRows((prev) => {
+        const lastT = prev.length > 0 ? prev[prev.length - 1].t : -Infinity
         const byT = new Map(prev.map((r) => [r.t, r]))
         for (const r of tick) {
           if (!wanted.has(r.sensors_id) || r.value === -1) continue
           const t = parseDateTime(r.time).getTime()
           const row = byT.get(t)
+          if (row === undefined && t - lastT < stepMs) continue
           byT.set(t, row === undefined ? { t, [r.sensors_id]: r.value } : { ...row, [r.sensors_id]: r.value })
         }
-        return [...byT.values()]
-          .sort((a, b) => a.t - b.t)
-          .filter((p) => p.t >= windowStart)
-          .slice(-MAX_POINTS)
+        return [...byT.values()].sort((a, b) => a.t - b.t).filter((p) => p.t >= windowStart)
       })
     })
-  }, [api, idsKey, range.ms])
+  }, [api, idsKey, range.ms, stepMs])
 
-  const fmtTick = (t: number): string => {
-    const d = new Date(t)
-    return rangeKey === '7d'
-      ? `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`
-      : `${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
+  // Slide the fixed window forward even when no data arrives.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), NOW_REFRESH_MS)
+    return () => clearInterval(id)
+  }, [])
+
+  const domainStart = now - range.ms
+  const ticks = useMemo(() => buildTimeTicks(domainStart, now, range.tickMs), [domainStart, now, range.tickMs])
 
   return (
     <div className="flex flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-4 md:h-full">
@@ -149,7 +148,7 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
             </span>
           </div>
           <div className="flex gap-2">
-            {RANGES.map((r) => (
+            {CHART_RANGES.map((r) => (
               <button
                 key={r.key}
                 type="button"
@@ -197,9 +196,11 @@ export function RealtimeSensorChart({ sensors }: { sensors: SensorInfo[] }) {
             <XAxis
               dataKey="t"
               type="number"
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={fmtTick}
-              minTickGap={48}
+              domain={[domainStart, now]}
+              allowDataOverflow
+              ticks={ticks}
+              interval={0}
+              tickFormatter={(t: number) => formatTimeTick(t, range)}
               stroke="#737686"
               tick={{ fill: '#737686', fontSize: 12 }}
               tickLine={false}

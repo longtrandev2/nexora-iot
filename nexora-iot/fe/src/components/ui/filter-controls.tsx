@@ -64,17 +64,19 @@ export function FilterSelect({
   )
 }
 
-/** Label + search text input with leading icon. */
+/** Label + search text input with leading icon; Enter calls onEnter (same as the "Tìm kiếm" button). */
 export function FilterText({
   label,
   value,
   onChange,
+  onEnter,
   placeholder,
   className = 'flex-1 min-w-[200px]',
 }: {
   label: string
   value: string
   onChange: (value: string) => void
+  onEnter?: () => void
   placeholder?: string
   className?: string
 }) {
@@ -86,6 +88,10 @@ export function FilterText({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Skip Enter while an IME (Vietnamese Telex...) is still composing.
+            if (e.key === 'Enter' && !e.nativeEvent.isComposing) onEnter?.()
+          }}
           placeholder={placeholder}
           className={`${FILTER_INPUT_CLASSES} pl-10`}
         />

@@ -1,5 +1,6 @@
 package vn.ptit.iot.nexora.service;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -67,8 +68,20 @@ public class SensorService {
         return out;
     }
 
-    /** Last `limit` points in [from, to], oldest -> newest. */
+    /**
+     * Chart points oldest -> newest.
+     * With `from`: the whole window [from, to|now] averaged into ~limit equal time slots (dashboard ranges 30m .. 7d).
+     * Without `from`: the last `limit` raw points.
+     */
     public List<ChartPoint> chart(int sensorId, LocalDateTime from, LocalDateTime to, int limit) {
+        if (from != null) {
+            LocalDateTime end = to != null ? to : LocalDateTime.now();
+            long seconds = Math.max(1, ChronoUnit.SECONDS.between(from, end));
+            long bucket = Math.max(1, (seconds + limit - 1) / limit);
+            return data.findChartBuckets(sensorId, from, end, bucket).stream()
+                    .map(r -> new ChartPoint(toLocalDateTime(r[0]), ((Number) r[1]).doubleValue()))
+                    .toList();
+        }
         List<ChartPoint> points = new ArrayList<>(data.findChart(sensorId, from, to, PageRequest.of(0, limit))
                 .stream().map(d -> new ChartPoint(d.getTime(), d.getValue())).toList());
         Collections.reverse(points);
@@ -93,6 +106,11 @@ public class SensorService {
         }
         String mode = switch (k) { case "temp", "humid", "light" -> "value"; default -> k; };
         return Paged.of(data.search(sensor, from, to, needle(search), mode, pageable), SensorReading::from);
+    }
+
+    /** Native query datetime column -> LocalDateTime (driver may return Timestamp or LocalDateTime). */
+    private static LocalDateTime toLocalDateTime(Object value) {
+        return value instanceof Timestamp ts ? ts.toLocalDateTime() : (LocalDateTime) value;
     }
 
     /** Search text: trimmed, lowercased, LIKE wildcards made literal. */
